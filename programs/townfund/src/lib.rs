@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod instructions;
 pub mod state;
 
@@ -15,11 +16,24 @@ declare_id!("HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf");
 pub mod townfund {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        crate::instructions::initialize::handle_initialize(ctx)
-    }
-
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        crate::instructions::increment::handle_increment(ctx)
+    /// Create a fundraiser and its empty vault.
+    pub fn initialize_project(
+        ctx: Context<InitializeProject>,
+        project_id: u64,
+        kind: ProjectKind,
+        target: u64,
+        duration_secs: i64,
+        title: String,
+        candidates: Vec<Pubkey>,
+    ) -> Result<()> {
+        instructions::initialize_project::handle_initialize_project(
+            ctx,
+            project_id,
+            kind,
+            target,
+            duration_secs,
+            title,
+            candidates,
+        )
     }
 }

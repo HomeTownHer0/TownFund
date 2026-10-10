@@ -1,7 +1,7 @@
 [package]
 name = "townfund"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "TownFund: community fundraiser and job board"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -14,7 +14,8 @@ default = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+demo = []
 anchor-debug = []
 custom-heap = []
 custom-panic = []
@@ -22,6 +23,7 @@ custom-panic = []
 
 [dependencies]
 anchor-lang = "1.2.0"
+anchor-spl = "1.2.0"
 
 [dev-dependencies]
 litesvm = "0.10.0"
@@ -29,6 +31,10 @@ solana-message = "3.0.1"
 solana-transaction = "3.0.2"
 solana-signer = "3.0.0"
 solana-keypair = "3.0.1"
+solana-account = "3"
+solana-transaction-error = "3"
+solana-instruction-error = "2"
+anchor-spl = "1.2.0"
 
 
 [lints.rust]

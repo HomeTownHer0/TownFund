@@ -11,8 +11,8 @@ can take money out any other way.
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
-> **Status:** scaffold only. The code in `programs/townfund` is still
-> Anchor's sample counter. It is replaced in slice 1.
+> **Status:** slice 1 done: projects can be created (19 tests).
+> Pledging and payouts come in slices 2 and 3.
 
 ## How it works (V1, "Creators + Backers")
 
@@ -39,7 +39,7 @@ in Solana School Fall 2026
 | Step | What | Status |
 |---|---|---|
 | Scaffold | Anchor 1.2 workspace, keypair-safe `.gitignore`, passing test, GitHub CI check | ✅ |
-| Slice 1 | `initialize_project`, Project account, vault | ⏳ |
+| Slice 1 | `initialize_project`, Project account, vault | ✅ |
 | Slice 2 | Treasury, `pledge`, `tip` | ⏳ |
 | Slice 3 | `settle`, `refund`, `cancel_project` | ⏳ |
 | Devnet | Deploy, with a mock USDC mint | ⏳ |
