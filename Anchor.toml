@@ -7,10 +7,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-townfund = "HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf"
+townfund = "FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv"
 
 [programs.devnet]
-townfund = "HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf"
+townfund = "FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv"
 
 [provider]
 cluster = "localnet"

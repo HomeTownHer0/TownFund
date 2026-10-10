@@ -10,7 +10,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf");
+declare_id!("FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv");
 
 #[program]
 pub mod townfund {
