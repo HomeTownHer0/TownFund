@@ -23,4 +23,18 @@ pub enum TownFundError {
     WrongMint,
     #[msg("Math overflow")]
     MathOverflow,
+    #[msg("Project is not taking pledges")]
+    ProjectNotActive,
+    #[msg("The deadline has passed")]
+    DeadlinePassed,
+    #[msg("Pledge must be at least 1 USDC")]
+    PledgeTooSmall,
+    #[msg("Community projects need a vote on the first pledge")]
+    VoteRequired,
+    #[msg("Vote not allowed: Creator-only project, or vote already cast")]
+    VoteNotAllowed,
+    #[msg("Vote is not a valid candidate number")]
+    InvalidVote,
+    #[msg("Tip must be more than zero")]
+    TipZero,
 }

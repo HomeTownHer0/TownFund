@@ -63,3 +63,42 @@ pub struct Project {
     /// Spare room for future fields (D-d). Always zero for now.
     pub reserved: [u8; 64],
 }
+
+/// TownFund's fee account. One per program. Address = ["treasury"].
+/// Program-owned (PDA, no private key). No withdraw path in V1.
+#[account]
+#[derive(InitSpace, Debug)]
+pub struct Treasury {
+    pub version: u8,
+    pub bump: u8,
+    pub vault_bump: u8,
+    /// Token accepted (always USDC_MINT).
+    pub mint: Pubkey,
+    /// Token account holding fees, at ["treasury_vault"].
+    pub vault: Pubkey,
+    /// Reserved for the future "door" (multisig or vote) that can spend
+    /// treasury funds (D-f). Always None in V1: nothing can spend.
+    pub door_authority: Option<Pubkey>,
+    /// Lifetime fees received (base units).
+    pub total_fees: u64,
+    /// Spare room (D-d).
+    pub reserved: [u8; 64],
+}
+
+/// One backer's receipt for one project. Address = ["pledge", project, backer].
+#[account]
+#[derive(InitSpace, Debug)]
+pub struct Pledge {
+    pub version: u8,
+    pub bump: u8,
+    pub project: Pubkey,
+    pub backer: Pubkey,
+    /// Total pledged by this backer, including top-ups (base units).
+    pub amount: u64,
+    /// Candidate index voted for (Community only). Locked after first pledge.
+    pub vote: Option<u8>,
+    /// Set when the backer has taken their refund.
+    pub refunded: bool,
+    /// Spare room (D-d).
+    pub reserved: [u8; 32],
+}

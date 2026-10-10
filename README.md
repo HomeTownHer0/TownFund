@@ -11,8 +11,8 @@ can take money out any other way.
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
-> **Status:** slice 1 done: projects can be created (19 tests).
-> Pledging and payouts come in slices 2 and 3.
+> **Status:** slices 1-2 done: create projects, pledge (with Community
+> voting), tip, treasury (38 tests). Payouts and refunds come in slice 3.
 
 ## How it works (V1, "Creators + Backers")
 
@@ -40,7 +40,7 @@ in Solana School Fall 2026
 |---|---|---|
 | Scaffold | Anchor 1.2 workspace, keypair-safe `.gitignore`, passing test, GitHub CI check | ✅ |
 | Slice 1 | `initialize_project`, Project account, vault | ✅ |
-| Slice 2 | Treasury, `pledge`, `tip` | ⏳ |
+| Slice 2 | Treasury, `pledge` (+ Community vote), `tip` | ✅ |
 | Slice 3 | `settle`, `refund`, `cancel_project` | ⏳ |
 | Devnet | Deploy, with a mock USDC mint | ⏳ |
 | Roadmap | Community election, treasury door, milestones, SBTs, website | after Oct 16 |

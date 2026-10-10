@@ -13,7 +13,7 @@ use {
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
-    townfund::{ProjectKind, PROJECT_SEED, USDC_MINT, VAULT_SEED},
+    townfund::{ProjectKind, PLEDGE_SEED, PROJECT_SEED, TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED},
 };
 
 pub const TOKEN_PROGRAM: Pubkey = anchor_spl::token::ID;
@@ -64,6 +64,52 @@ impl Bench {
                 Account { lamports, data, owner: TOKEN_PROGRAM, executable: false, rent_epoch: 0 },
             )
             .unwrap();
+    }
+
+    /// A USDC token account owned by `owner` holding `amount`. Returns its address.
+    pub fn usdc_account(&mut self, owner: &Pubkey, amount: u64) -> Pubkey {
+        let address = Pubkey::new_unique();
+        self.put_token_account(address, USDC_MINT, *owner, amount);
+        address
+    }
+
+    /// Write an SPL Token account directly (165 bytes).
+    pub fn put_token_account(&mut self, address: Pubkey, mint: Pubkey, owner: Pubkey, amount: u64) {
+        let mut data = vec![0u8; 165];
+        data[0..32].copy_from_slice(mint.as_ref());
+        data[32..64].copy_from_slice(owner.as_ref());
+        data[64..72].copy_from_slice(&amount.to_le_bytes());
+        data[108] = 1; // state: Initialized
+        let lamports = self.svm.minimum_balance_for_rent_exemption(165);
+        self.svm
+            .set_account(
+                address,
+                Account { lamports, data, owner: TOKEN_PROGRAM, executable: false, rent_epoch: 0 },
+            )
+            .unwrap();
+    }
+
+    pub fn balance(&self, token_account: Pubkey) -> u64 {
+        self.token_account(token_account).2
+    }
+
+    /// Move the chain clock forward.
+    pub fn warp(&mut self, seconds: i64) {
+        let mut clock = self.svm.get_sysvar::<anchor_lang::prelude::Clock>();
+        clock.unix_timestamp += seconds;
+        self.svm.set_sysvar(&clock);
+    }
+
+    pub fn pledge_record(&self, address: Pubkey) -> townfund::Pledge {
+        let acct = self.svm.get_account(&address).expect("pledge missing");
+        let mut data: &[u8] = &acct.data;
+        townfund::Pledge::try_deserialize(&mut data).unwrap()
+    }
+
+    pub fn treasury(&self) -> townfund::Treasury {
+        let acct = self.svm.get_account(&treasury_address()).expect("treasury missing");
+        let mut data: &[u8] = &acct.data;
+        townfund::Treasury::try_deserialize(&mut data).unwrap()
     }
 
     pub fn now(&self) -> i64 {
@@ -190,6 +236,80 @@ pub fn initialize_project_ix(
             vault: vault_address(&project),
             token_program: TOKEN_PROGRAM,
             system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn pledge_address(project: &Pubkey, backer: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[PLEDGE_SEED, project.as_ref(), backer.as_ref()], &townfund::id()).0
+}
+
+pub fn treasury_address() -> Pubkey {
+    Pubkey::find_program_address(&[TREASURY_SEED], &townfund::id()).0
+}
+
+pub fn treasury_vault_address() -> Pubkey {
+    Pubkey::find_program_address(&[TREASURY_VAULT_SEED], &townfund::id()).0
+}
+
+pub fn initialize_treasury_ix(payer: &Pubkey) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::InitializeTreasury {}.data(),
+        townfund::accounts::InitializeTreasury {
+            payer: *payer,
+            treasury: treasury_address(),
+            mint: USDC_MINT,
+            treasury_vault: treasury_vault_address(),
+            token_program: TOKEN_PROGRAM,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn pledge_ix(
+    backer: &Pubkey,
+    project: &Pubkey,
+    backer_token: &Pubkey,
+    amount: u64,
+    vote: Option<u8>,
+) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::Pledge { amount, vote }.data(),
+        townfund::accounts::MakePledge {
+            backer: *backer,
+            project: *project,
+            pledge: pledge_address(project, backer),
+            mint: USDC_MINT,
+            backer_token: *backer_token,
+            vault: vault_address(project),
+            token_program: TOKEN_PROGRAM,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn tip_ix(
+    tipper: &Pubkey,
+    project: &Pubkey,
+    tipper_token: &Pubkey,
+    creator_token: &Pubkey,
+    amount: u64,
+) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::Tip { amount }.data(),
+        townfund::accounts::Tip {
+            tipper: *tipper,
+            project: *project,
+            mint: USDC_MINT,
+            tipper_token: *tipper_token,
+            creator_token: *creator_token,
+            token_program: TOKEN_PROGRAM,
         }
         .to_account_metas(None),
     )

@@ -14,6 +14,12 @@ pub const USDC_DECIMALS: u8 = 6;
 pub const PROJECT_SEED: &[u8] = b"project";
 #[constant]
 pub const VAULT_SEED: &[u8] = b"vault";
+#[constant]
+pub const PLEDGE_SEED: &[u8] = b"pledge";
+#[constant]
+pub const TREASURY_SEED: &[u8] = b"treasury";
+#[constant]
+pub const TREASURY_VAULT_SEED: &[u8] = b"treasury_vault";
 
 // Money limits
 #[constant]
