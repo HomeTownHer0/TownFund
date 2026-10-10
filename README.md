@@ -11,8 +11,8 @@ can take money out any other way.
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
-> **Status:** V1 program complete (62 tests) and live on Devnet.
-> Demo tool verified on a local chain; first Devnet run next.
+> **Status:** V1 program complete (62 tests), live on Devnet, and the full
+> demo has run successfully on Devnet (Oct 10, 2026).
 
 ## How it works (V1, "Creators + Backers")
 
@@ -50,7 +50,7 @@ in Solana School Fall 2026
 | Badge | Soulbound backer NFT (Metaplex Core) after success | ✅ |
 | Devnet | Deployed (demo build): [`FdaMK3…PXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet) | ✅ |
 | Demo tool | `townfund` CLI: full Demo Day story with Explorer links (verified on a local chain) | ✅ |
-| Devnet run | First full demo run on Devnet | ⏳ |
+| Devnet run | Full demo on Devnet: [success + badge](https://explorer.solana.com/tx/2Kgegw53mVKEV1YpyoRpsLt1oYGFUpocKb8qtg72tbrHxJJjVz7WbSvrXWRUcXTcfjrjRJWQbQSWYqtYzpyqdpeb?cluster=devnet), [failure + refund](https://explorer.solana.com/tx/4dx7i3uEkWAaaYj2Fe6j8ZxQ4p3BQu8MY6FyRPgsXMVmiWRT6iQ7HgbGBqf3Wo4BY2xD1ifxD2SfRabLP51BekGm?cluster=devnet) | ✅ |
 | Demo Day | October 16, 2026 | ⏳ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
 
