@@ -63,3 +63,10 @@ pub struct Refunded {
     pub backer: Pubkey,
     pub amount: u64,
 }
+
+#[event]
+pub struct BadgeMinted {
+    pub project: Pubkey,
+    pub backer: Pubkey,
+    pub asset: Pubkey,
+}

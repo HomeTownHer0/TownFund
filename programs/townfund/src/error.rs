@@ -45,4 +45,6 @@ pub enum TownFundError {
     WrongPayeeAccount,
     #[msg("Refunds are only open for failed or cancelled projects")]
     RefundsNotOpen,
+    #[msg("Badges are only minted for projects that succeeded")]
+    ProjectNotSucceeded,
 }

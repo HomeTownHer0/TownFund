@@ -11,8 +11,8 @@ can take money out any other way.
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
-> **Status:** program complete for V1 (54 tests): create, pledge, vote,
-> tip, settle 95/5, cancel, refund. Next: Devnet deploy.
+> **Status:** program complete for V1 (62 tests): create, pledge, vote,
+> tip, settle 95/5, cancel, refund, soulbound backer badge. Next: Devnet deploy.
 
 ## How it works (V1, "Creators + Backers")
 
@@ -42,8 +42,9 @@ in Solana School Fall 2026
 | Slice 1 | `initialize_project`, Project account, vault | ✅ |
 | Slice 2 | Treasury, `pledge` (+ Community vote), `tip` | ✅ |
 | Slice 3 | `settle` (95/5), `refund`, `cancel_project` | ✅ |
+| Badge | Soulbound backer NFT (Metaplex Core) after success | ✅ |
 | Devnet | Deploy, using Circle's Devnet USDC | ⏳ |
-| Roadmap | Treasury door, milestones, SBTs, website | after Oct 16 |
+| Roadmap | Treasury door, milestones, website | after Oct 16 |
 
 ## Build and test
 
@@ -66,6 +67,15 @@ create -> pledge -> settle run fits in a live demo.
 
 **Demo Day plan:** a Creator-only project succeeds live (pledge, escrow,
 settle 95/5), and a Community project fails and refunds every backer 100%.
+
+## Backer badge
+
+After a project succeeds, `mint_backer_badge` gives each backer a
+**soulbound NFT** (Metaplex Core): "TownFund Backer: <project title>".
+It's frozen forever by Core's Permanent Freeze plugin with no authority
+that could unfreeze it, so it can never be transferred or sold. One per
+backer per project; never for failed projects. Tests run against the real
+Metaplex Core program (`tests/fixtures/mpl_core.so`, dumped from Devnet).
 
 ## Token
 

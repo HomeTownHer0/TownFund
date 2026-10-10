@@ -24,6 +24,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = { version = "1.2.0", features = ["init-if-needed"] }
 anchor-spl = "1.2.0"
+mpl-core = "0.12.1"
 
 [dev-dependencies]
 litesvm = "0.10.0"
@@ -35,6 +36,7 @@ solana-account = "3"
 solana-transaction-error = "3"
 solana-instruction-error = "2"
 anchor-spl = "1.2.0"
+mpl-core = "0.12.1"
 
 
 [lints.rust]

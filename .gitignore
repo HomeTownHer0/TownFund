@@ -17,3 +17,6 @@ id.json
 keypairs/
 .env
 .env.*
+
+# Program dumps made in the repo root (fixtures live in tests/fixtures)
+/mpl_core.so

@@ -128,3 +128,18 @@ impl Project {
         }
     }
 }
+
+/// Record that a backer's soulbound badge was minted for a project.
+/// Address = ["badge", project, backer]; its existence blocks a second mint.
+#[account]
+#[derive(InitSpace, Debug)]
+pub struct Badge {
+    pub version: u8,
+    pub bump: u8,
+    pub project: Pubkey,
+    pub backer: Pubkey,
+    /// The Metaplex Core asset (the NFT itself).
+    pub asset: Pubkey,
+    /// Spare room (D-d).
+    pub reserved: [u8; 32],
+}

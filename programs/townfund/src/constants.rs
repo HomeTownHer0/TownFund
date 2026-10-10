@@ -20,6 +20,15 @@ pub const PLEDGE_SEED: &[u8] = b"pledge";
 pub const TREASURY_SEED: &[u8] = b"treasury";
 #[constant]
 pub const TREASURY_VAULT_SEED: &[u8] = b"treasury_vault";
+#[constant]
+pub const BADGE_SEED: &[u8] = b"badge";
+/// PDA that is the update authority of every badge NFT. It never signs
+/// an update, so badges can never be edited.
+#[constant]
+pub const BADGE_AUTHORITY_SEED: &[u8] = b"badge_authority";
+
+/// Link stored in every backer badge NFT.
+pub const BADGE_URI: &str = "https://github.com/HomeTownHer0/townfund";
 
 // Money limits
 #[constant]

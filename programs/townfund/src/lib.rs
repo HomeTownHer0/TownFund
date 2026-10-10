@@ -67,4 +67,9 @@ pub mod townfund {
     pub fn refund(ctx: Context<Refund>) -> Result<()> {
         instructions::refund::handle_refund(ctx)
     }
+
+    /// After success: mint the backer a soulbound Metaplex Core badge NFT.
+    pub fn mint_backer_badge(ctx: Context<MintBackerBadge>) -> Result<()> {
+        instructions::mint_backer_badge::handle_mint_backer_badge(ctx)
+    }
 }

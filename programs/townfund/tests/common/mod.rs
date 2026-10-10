@@ -13,7 +13,7 @@ use {
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
-    townfund::{ProjectKind, PLEDGE_SEED, PROJECT_SEED, TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED},
+    townfund::{ProjectKind, BADGE_AUTHORITY_SEED, BADGE_SEED, PLEDGE_SEED, PROJECT_SEED, TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED},
 };
 
 pub const TOKEN_PROGRAM: Pubkey = anchor_spl::token::ID;
@@ -34,6 +34,9 @@ impl Bench {
             "/../deploy/townfund.so"
         ));
         svm.add_program(townfund::id(), bytes).unwrap();
+        // Real Metaplex Core, dumped from Devnet (tests/fixtures/mpl_core.so).
+        let core = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/mpl_core.so"));
+        svm.add_program(mpl_core::ID, core).unwrap();
         let mint_authority = Keypair::new();
         let mut bench = Self { svm, mint_authority };
         let authority = bench.mint_authority.pubkey();
@@ -361,6 +364,38 @@ pub fn refund_ix(
             mint: USDC_MINT,
             backer_token: *backer_token,
             token_program: TOKEN_PROGRAM,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn badge_address(project: &Pubkey, backer: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(&[BADGE_SEED, project.as_ref(), backer.as_ref()], &townfund::id()).0
+}
+
+pub fn badge_authority_address() -> Pubkey {
+    Pubkey::find_program_address(&[BADGE_AUTHORITY_SEED], &townfund::id()).0
+}
+
+pub fn mint_badge_ix(
+    payer: &Pubkey,
+    project: &Pubkey,
+    backer: &Pubkey,
+    asset: &Pubkey,
+) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::MintBackerBadge {}.data(),
+        townfund::accounts::MintBackerBadge {
+            payer: *payer,
+            project: *project,
+            pledge: pledge_address(project, backer),
+            backer: *backer,
+            badge: badge_address(project, backer),
+            asset: *asset,
+            badge_authority: badge_authority_address(),
+            mpl_core_program: mpl_core::ID,
+            system_program: system_program::ID,
         }
         .to_account_metas(None),
     )
