@@ -48,3 +48,6 @@ jobs:
 
       - name: Build and test
         run: ./scripts/build.sh
+
+      - name: Build and test the Devnet (demo) version
+        run: ./scripts/build-devnet.sh

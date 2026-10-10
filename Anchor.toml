@@ -9,6 +9,9 @@ skip-lint = false
 [programs.localnet]
 townfund = "HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf"
 
+[programs.devnet]
+townfund = "HaLAfSdw1W39jxiH9MBEdeAqiAzwgDH4K6xBcU6AGBgf"
+
 [provider]
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"

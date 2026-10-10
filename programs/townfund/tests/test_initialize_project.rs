@@ -143,6 +143,7 @@ fn rejects_zero_and_negative_duration() {
 }
 
 #[test]
+#[cfg(not(feature = "demo"))]
 fn rejects_10_minute_demo_duration_in_normal_build() {
     expect_fault(NewProject { duration_secs: 600, ..Default::default() }, E::InvalidDuration);
 }
@@ -228,4 +229,17 @@ fn rejects_unsigned_creator() {
     let mut ix = initialize_project_ix(&victim.pubkey(), &NewProject::default());
     ix.accounts[0].is_signer = false;
     assert!(bench.send(ix, &[&payer]).is_err());
+}
+
+#[test]
+#[cfg(feature = "demo")]
+fn demo_build_accepts_exactly_10_minutes() {
+    let mut bench = Bench::new();
+    let creator = bench.wallet();
+    create(&mut bench, &creator, &NewProject { duration_secs: 600, ..Default::default() }).unwrap();
+    let project = bench.project(project_address(&creator.pubkey(), 1));
+    assert_eq!(project.deadline, project.created_at + 600);
+    // Only exactly 10 minutes; other short durations are still refused.
+    expect_fault(NewProject { duration_secs: 601, ..Default::default() }, E::InvalidDuration);
+    expect_fault(NewProject { duration_secs: 599, ..Default::default() }, E::InvalidDuration);
 }

@@ -2,10 +2,10 @@
 //! USDC has 6 decimals, so 1 USDC = 1_000_000 base units.
 use anchor_lang::prelude::*;
 
-/// The only token this program accepts (our mock USDC on Devnet).
-/// PLACEHOLDER: replaced with the real mock-USDC mint address before the
-/// Devnet deploy. Tests create a mint at this exact address.
-pub const USDC_MINT: Pubkey = pubkey!("CP2SpHyhCw6GKQg2QL5jwKKvTWkkfEr1Y9j1rF3YUZsL");
+/// The only token this program accepts: Circle's official Devnet USDC
+/// (classic SPL Token, 6 decimals). Get it free at faucet.circle.com.
+/// Tests create a mint at this exact address. Change before any Mainnet use.
+pub const USDC_MINT: Pubkey = pubkey!("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 #[constant]
 pub const USDC_DECIMALS: u8 = 6;
 

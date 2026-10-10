@@ -42,7 +42,7 @@ in Solana School Fall 2026
 | Slice 1 | `initialize_project`, Project account, vault | ✅ |
 | Slice 2 | Treasury, `pledge` (+ Community vote), `tip` | ✅ |
 | Slice 3 | `settle` (95/5), `refund`, `cancel_project` | ✅ |
-| Devnet | Deploy, with a mock USDC mint | ⏳ |
+| Devnet | Deploy, using Circle's Devnet USDC | ⏳ |
 | Roadmap | Treasury door, milestones, SBTs, website | after Oct 16 |
 
 ## Build and test
@@ -55,6 +55,19 @@ Requires Solana CLI 4.1.2, Anchor 1.2.0, Rust ≥ 1.89.
 
 That builds the program for SBPF v0 with platform-tools v1.54, then runs
 the tests on LiteSVM (an in-memory Solana chain).
+
+```bash
+./scripts/build-devnet.sh
+```
+
+Builds the Devnet / Demo Day version: identical, plus a `demo` feature that
+also accepts a 10-minute project so a full run fits in a live demo.
+
+## Token
+
+TownFund accepts exactly one token: Circle's Devnet USDC
+(`4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`, get it at
+[faucet.circle.com](https://faucet.circle.com)). Any other token is refused.
 
 ## Safety
 
