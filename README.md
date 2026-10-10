@@ -6,8 +6,8 @@ the money pays out (95% to the payee, 5% to the TownFund treasury). If it
 misses, every backer gets a full refund. No one, including the builders,
 can take money out any other way.
 
-Built by Christian "Nait" Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
-in Solana School, Fall 2026. Demo Day: October 16, 2026.
+Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
+in Solana School Fall 2026
 
 > **Status:** scaffold only. The code in `programs/townfund` is still
 > Anchor's sample counter. It is replaced in slice 1.
