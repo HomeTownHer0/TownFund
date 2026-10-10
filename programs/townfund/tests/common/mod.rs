@@ -314,3 +314,54 @@ pub fn tip_ix(
         .to_account_metas(None),
     )
 }
+
+pub fn settle_ix(
+    caller: &Pubkey,
+    project: &Pubkey,
+    payee_token: Option<Pubkey>,
+) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::Settle {}.data(),
+        townfund::accounts::Settle {
+            caller: *caller,
+            project: *project,
+            vault: vault_address(project),
+            treasury: treasury_address(),
+            treasury_vault: treasury_vault_address(),
+            mint: USDC_MINT,
+            payee_token,
+            token_program: TOKEN_PROGRAM,
+        }
+        .to_account_metas(None),
+    )
+}
+
+pub fn cancel_ix(creator: &Pubkey, project: &Pubkey) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::CancelProject {}.data(),
+        townfund::accounts::CancelProject { creator: *creator, project: *project }.to_account_metas(None),
+    )
+}
+
+pub fn refund_ix(
+    backer: &Pubkey,
+    project: &Pubkey,
+    backer_token: &Pubkey,
+) -> anchor_lang::solana_program::instruction::Instruction {
+    anchor_lang::solana_program::instruction::Instruction::new_with_bytes(
+        townfund::id(),
+        &townfund::instruction::Refund {}.data(),
+        townfund::accounts::Refund {
+            backer: *backer,
+            project: *project,
+            pledge: pledge_address(project, backer),
+            vault: vault_address(project),
+            mint: USDC_MINT,
+            backer_token: *backer_token,
+            token_program: TOKEN_PROGRAM,
+        }
+        .to_account_metas(None),
+    )
+}

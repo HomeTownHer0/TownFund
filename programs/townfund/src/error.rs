@@ -37,4 +37,12 @@ pub enum TownFundError {
     InvalidVote,
     #[msg("Tip must be more than zero")]
     TipZero,
+    #[msg("The deadline has not been reached yet")]
+    DeadlineNotReached,
+    #[msg("Payee's USDC account is required to pay out a successful project")]
+    PayeeAccountRequired,
+    #[msg("That USDC account does not belong to the payee")]
+    WrongPayeeAccount,
+    #[msg("Refunds are only open for failed or cancelled projects")]
+    RefundsNotOpen,
 }

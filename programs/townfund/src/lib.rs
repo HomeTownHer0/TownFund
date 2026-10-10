@@ -52,4 +52,19 @@ pub mod townfund {
     pub fn tip(ctx: Context<Tip>, amount: u64) -> Result<()> {
         instructions::tip::handle_tip(ctx, amount)
     }
+
+    /// After the deadline, anyone: pay out 95/5 if target hit, else mark Failed.
+    pub fn settle(ctx: Context<Settle>) -> Result<()> {
+        instructions::settle::handle_settle(ctx)
+    }
+
+    /// Creator stops the project before its deadline. Refunds open.
+    pub fn cancel_project(ctx: Context<CancelProject>) -> Result<()> {
+        instructions::cancel_project::handle_cancel_project(ctx)
+    }
+
+    /// Backer takes back 100% from a failed or cancelled project.
+    pub fn refund(ctx: Context<Refund>) -> Result<()> {
+        instructions::refund::handle_refund(ctx)
+    }
 }

@@ -37,3 +37,29 @@ pub struct Tipped {
     pub creator: Pubkey,
     pub amount: u64,
 }
+
+#[event]
+pub struct Settled {
+    pub project: Pubkey,
+    /// true = target hit and paid out; false = target missed (refunds open).
+    pub success: bool,
+    /// Who was paid (None if the project failed).
+    pub payee: Option<Pubkey>,
+    /// Winning candidate number (Community success only).
+    pub winner: Option<u8>,
+    pub payout: u64,
+    pub fee: u64,
+}
+
+#[event]
+pub struct ProjectCancelled {
+    pub project: Pubkey,
+    pub total_pledged: u64,
+}
+
+#[event]
+pub struct Refunded {
+    pub project: Pubkey,
+    pub backer: Pubkey,
+    pub amount: u64,
+}

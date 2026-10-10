@@ -102,3 +102,29 @@ pub struct Pledge {
     /// Spare room (D-d).
     pub reserved: [u8; 32],
 }
+
+impl Project {
+    /// Community: candidate with the most votes. Tie -> lowest number.
+    pub fn winning_candidate(&self) -> Option<u8> {
+        if self.candidates.is_empty() {
+            return None;
+        }
+        let mut best = 0usize;
+        for i in 1..self.candidates.len() {
+            if self.votes[i] > self.votes[best] {
+                best = i;
+            }
+        }
+        Some(best as u8)
+    }
+
+    /// Refunds are open when the project was cancelled, failed at settle,
+    /// or is past its deadline without reaching target (no settle needed).
+    pub fn refunds_open(&self, now: i64) -> bool {
+        match self.status {
+            ProjectStatus::Cancelled | ProjectStatus::Failed => true,
+            ProjectStatus::Active => now >= self.deadline && self.total_pledged < self.target,
+            ProjectStatus::Succeeded => false,
+        }
+    }
+}
