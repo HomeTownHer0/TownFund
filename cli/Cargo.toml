@@ -1,0 +1,25 @@
+[package]
+name = "townfund-cli"
+version = "0.1.0"
+description = "Command-line tool to run TownFund on Devnet (Demo Day)"
+edition.workspace = true
+publish = false
+
+[[bin]]
+name = "townfund"
+path = "src/main.rs"
+
+[dependencies]
+townfund = { path = "../programs/townfund", features = ["no-entrypoint"] }
+anchor-lang = "1.2.0"
+anchor-spl = "1.2.0"
+mpl-core = "0.12.1"
+solana-rpc-client = "3.1.14"
+solana-commitment-config = "3"
+solana-keypair = "3.0.1"
+solana-signer = "3.0.0"
+solana-transaction = "3.0.2"
+solana-signature = "3"
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"

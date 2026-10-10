@@ -12,7 +12,7 @@ Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
 > **Status:** program complete for V1 (62 tests): create, pledge, vote,
-> tip, settle 95/5, cancel, refund, soulbound backer badge. Next: Devnet deploy.
+> tip, settle 95/5, cancel, refund, soulbound backer badge. Live on Devnet.
 
 ## How it works (V1, "Creators + Backers")
 
@@ -43,7 +43,8 @@ in Solana School Fall 2026
 | Slice 2 | Treasury, `pledge` (+ Community vote), `tip` | ✅ |
 | Slice 3 | `settle` (95/5), `refund`, `cancel_project` | ✅ |
 | Badge | Soulbound backer NFT (Metaplex Core) after success | ✅ |
-| Devnet | Deploy, using Circle's Devnet USDC | ⏳ |
+| Devnet | Deployed: [`FdaMK3…PXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet) | ✅ |
+| Demo tool | `townfund` CLI: full Demo Day story with Explorer links | ✅ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
 
 ## Build and test
@@ -67,6 +68,27 @@ create -> pledge -> settle run fits in a live demo.
 
 **Demo Day plan:** a Creator-only project succeeds live (pledge, escrow,
 settle 95/5), and a Community project fails and refunds every backer 100%.
+
+## Run the demo (Devnet)
+
+```bash
+cargo run -p townfund-cli -- demo --seconds 20
+```
+
+One command runs the Demo Day story against the live program and prints an
+Explorer link for every step:
+
+1. Creates (once) and funds three demo wallets in `~/.config/solana/townfund-demo/`
+   (creator, backer1, backer2) from your main wallet: SOL for fees, USDC for pledges
+2. **Individual project succeeds:** pledge 10 USDC into escrow, tip 1 USDC,
+   deadline passes, settle 95/5, soulbound badge minted to the backer
+3. **Community project fails:** pledge 5 of 20 USDC, deadline passes,
+   settle marks it Failed, backer refunded 100%
+
+Other commands: `setup-wallets`, `init-treasury`, `demo-success`, `demo-fail`,
+`status <project>`, `balances`, `recycle` (sends demo USDC back to your main
+wallet so you can rehearse again). Needs ~16 USDC in your main wallet the
+first time (Circle faucet); each run only consumes the 5% fee.
 
 ## Backer badge
 
