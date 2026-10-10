@@ -1,0 +1,19 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+.surfpool
+
+# --- KEYPAIRS: never commit a private key -----------------------------
+# Program keypair Anchor creates (target/deploy/<name>-keypair.json)
+*-keypair.json
+# Solana CLI wallet file name
+id.json
+# Any other key file anyone drops in the repo
+*.keypair
+keypairs/
+.env
+.env.*

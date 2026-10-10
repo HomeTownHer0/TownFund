@@ -1,0 +1,6 @@
+[toolchain]
+# Any stable Rust >= 1.89 works. "stable" (not a pinned 1.89.0) so builds
+# don't need to download a specific toolchain.
+channel = "stable"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
