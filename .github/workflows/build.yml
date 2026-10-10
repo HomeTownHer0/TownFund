@@ -1,0 +1,50 @@
+# Independent check: GitHub's own machines build TownFund and run the
+# tests on every push. Green check = it builds and the tests pass.
+name: build-and-test
+
+on:
+  push:
+  pull_request:
+
+env:
+  SOLANA_VERSION: v4.1.2
+  ANCHOR_VERSION: "1.2.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build and Solana platform-tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cache/solana
+            target
+          key: ${{ runner.os }}-townfund-${{ hashFiles('Cargo.lock') }}
+
+      - name: Install Solana CLI ${{ env.SOLANA_VERSION }}
+        run: |
+          curl -sSfL -o solana.tar.bz2 \
+            https://github.com/anza-xyz/agave/releases/download/${SOLANA_VERSION}/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          tar -xjf solana.tar.bz2 -C "$HOME"
+          echo "$HOME/solana-release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor ${{ env.ANCHOR_VERSION }}
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -sSfL -o "$HOME/.local/bin/anchor" \
+            https://github.com/solana-foundation/anchor/releases/download/v${ANCHOR_VERSION}/anchor-${ANCHOR_VERSION}-x86_64-unknown-linux-gnu
+          chmod +x "$HOME/.local/bin/anchor"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Versions
+        run: solana --version && anchor --version && rustc --version
+
+      - name: Build and test
+        run: ./scripts/build.sh

@@ -1,5 +1,7 @@
 # TownFund
 
+[![build-and-test](https://github.com/HomeTownHer0/townfund/actions/workflows/build.yml/badge.svg)](https://github.com/HomeTownHer0/townfund/actions/workflows/build.yml)
+
 A Solana program for community fundraising and a community job board.
 Backers pledge USDC to a project. If it hits its target by the deadline,
 the money pays out (95% to the payee, 5% to the TownFund treasury). If it
@@ -36,7 +38,7 @@ in Solana School Fall 2026
 
 | Step | What | Status |
 |---|---|---|
-| Scaffold | Anchor 1.2 workspace, keypair-safe `.gitignore`, passing test | ✅ |
+| Scaffold | Anchor 1.2 workspace, keypair-safe `.gitignore`, passing test, GitHub CI check | ✅ |
 | Slice 1 | `initialize_project`, Project account, vault | ⏳ |
 | Slice 2 | Treasury, `pledge`, `tip` | ⏳ |
 | Slice 3 | `settle`, `refund`, `cancel_project` | ⏳ |
