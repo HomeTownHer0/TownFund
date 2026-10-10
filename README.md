@@ -11,8 +11,8 @@ can take money out any other way.
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
-> **Status:** program complete for V1 (62 tests): create, pledge, vote,
-> tip, settle 95/5, cancel, refund, soulbound backer badge. Live on Devnet.
+> **Status:** V1 program complete (62 tests) and live on Devnet.
+> Demo tool verified on a local chain; first Devnet run next.
 
 ## How it works (V1, "Creators + Backers")
 
@@ -21,12 +21,17 @@ in Solana School Fall 2026
 | **Creator-only** | The creator |
 | **Community** | A contractor elected by backers (2–5 candidates, one wallet = one vote) |
 
-- **Pledge:** at least 1 USDC. Target at least 10 USDC. Duration 1–60 days.
+- **Pledge:** at least 1 USDC (top-ups too). Target at least 10 USDC.
+  Duration 1–60 days (the Devnet demo build also allows 10 seconds–10 minutes).
+- **Vote** (Community only): cast with a backer's first pledge, one wallet =
+  one vote, locked for top-ups. Most votes wins; a tie goes to the lowest number.
 - **Settle** (anyone can trigger it after the deadline):
   - Target hit → whole vault pays out once: **95% payee / 5% treasury**. Overfunding allowed.
   - Target missed, or creator cancelled → each backer claims a **100% refund**.
 - **Tips** go straight to the creator. No fee, not refundable.
 - **Treasury** is owned by the program (a PDA, no private key). No withdrawals in V1.
+- **Backer badge:** after success, each backer can receive a soulbound NFT
+  (see below).
 
 ### Known V1 limitations (roadmap, not bugs)
 1. A Community contractor is paid at settle, before the work is done. Milestones fix this.
@@ -43,9 +48,37 @@ in Solana School Fall 2026
 | Slice 2 | Treasury, `pledge` (+ Community vote), `tip` | ✅ |
 | Slice 3 | `settle` (95/5), `refund`, `cancel_project` | ✅ |
 | Badge | Soulbound backer NFT (Metaplex Core) after success | ✅ |
-| Devnet | Deployed: [`FdaMK3…PXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet) | ✅ |
-| Demo tool | `townfund` CLI: full Demo Day story with Explorer links | ✅ |
+| Devnet | Deployed (demo build): [`FdaMK3…PXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet) | ✅ |
+| Demo tool | `townfund` CLI: full Demo Day story with Explorer links (verified on a local chain) | ✅ |
+| Devnet run | First full demo run on Devnet | ⏳ |
+| Demo Day | October 16, 2026 | ⏳ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
+
+## Deployment
+
+| | |
+|---|---|
+| Cluster | Devnet only |
+| Program ID | `FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv` |
+| Build | Demo build (`./scripts/build-devnet.sh`) |
+| Upgrade authority | `7cpjF6175EPGZ3gopVLn94h5iuUFvd2VZ9Xq9QKzxU21` (owner's wallet) |
+| USDC | Circle Devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
+| Metaplex Core | `CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d` |
+
+## Decisions log
+
+Changes from the original v2.5 design, decided by the owner:
+
+| Date | Decision | Why |
+|---|---|---|
+| Oct 10 | Refund rent goes back to the backer | Simpler; no donation option |
+| Oct 10 | Version byte + spare room on every stored account; event for every money movement | Future fields without breaking stored data; history for the website |
+| Oct 10 | Treasury has an empty "door authority" field; no spending in V1 | Spending must never depend on one person; the door gets built later |
+| Oct 10 | Community vote cast with the first pledge, locked for top-ups | One wallet = one vote with no extra step |
+| Oct 10 | Use **Circle's Devnet USDC** instead of our own mock mint | Use the faucet that already works (reverses the original mock-mint plan) |
+| Oct 10 | **Soulbound backer badge** (Metaplex Core) included for Oct 16 | Owner priority; Metaplex Core as taught in class (reverses moving SBTs to later) |
+| Oct 10 | Demo build allows **10 s–10 min** projects | A full run must fit in a 5-minute presentation |
+| Oct 10 | Demo Day shows Creator-only **success** and Community **failure/refund** | Both outcomes in one demo; Community code is built and tested |
 
 ## Build and test
 
