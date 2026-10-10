@@ -34,9 +34,12 @@ pub const FEE_BPS: u16 = 500; // 5% to treasury (basis points: 10_000 = 100%)
 pub const MIN_DURATION: i64 = 86_400; // 1 day
 #[constant]
 pub const MAX_DURATION: i64 = 60 * 86_400; // 60 days
-/// Only accepted when the program is built with `--features demo`.
+/// Demo build only (`--features demo`): any length from 10 seconds to
+/// 10 minutes, so a full create -> pledge -> settle run fits on stage.
 #[constant]
-pub const DEMO_DURATION: i64 = 600; // 10 minutes
+pub const DEMO_MIN_DURATION: i64 = 10; // 10 seconds
+#[constant]
+pub const DEMO_MAX_DURATION: i64 = 600; // 10 minutes
 
 // Project shape (internal sizes; not published in the IDL)
 pub const MAX_TITLE_LEN: usize = 64; // bytes

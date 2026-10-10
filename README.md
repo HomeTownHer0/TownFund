@@ -61,7 +61,11 @@ the tests on LiteSVM (an in-memory Solana chain).
 ```
 
 Builds the Devnet / Demo Day version: identical, plus a `demo` feature that
-also accepts a 10-minute project so a full run fits in a live demo.
+also accepts projects from 10 seconds to 10 minutes long, so a full
+create -> pledge -> settle run fits in a live demo.
+
+**Demo Day plan:** a Creator-only project succeeds live (pledge, escrow,
+settle 95/5), and a Community project fails and refunds every backer 100%.
 
 ## Token
 

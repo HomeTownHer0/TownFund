@@ -144,8 +144,10 @@ fn rejects_zero_and_negative_duration() {
 
 #[test]
 #[cfg(not(feature = "demo"))]
-fn rejects_10_minute_demo_duration_in_normal_build() {
-    expect_fault(NewProject { duration_secs: 600, ..Default::default() }, E::InvalidDuration);
+fn normal_build_refuses_demo_durations() {
+    for secs in [10, 20, 600] {
+        expect_fault(NewProject { duration_secs: secs, ..Default::default() }, E::InvalidDuration);
+    }
 }
 
 #[test]
@@ -233,13 +235,43 @@ fn rejects_unsigned_creator() {
 
 #[test]
 #[cfg(feature = "demo")]
-fn demo_build_accepts_exactly_10_minutes() {
+fn demo_build_accepts_10_seconds_to_10_minutes() {
     let mut bench = Bench::new();
     let creator = bench.wallet();
-    create(&mut bench, &creator, &NewProject { duration_secs: 600, ..Default::default() }).unwrap();
-    let project = bench.project(project_address(&creator.pubkey(), 1));
-    assert_eq!(project.deadline, project.created_at + 600);
-    // Only exactly 10 minutes; other short durations are still refused.
+    for (id, secs) in [(1, 10), (2, 20), (3, 120), (4, 600)] {
+        create(&mut bench, &creator, &NewProject { project_id: id, duration_secs: secs, ..Default::default() })
+            .unwrap();
+        let project = bench.project(project_address(&creator.pubkey(), id));
+        assert_eq!(project.deadline, project.created_at + secs);
+    }
+    // Just outside the demo window is still refused.
+    expect_fault(NewProject { duration_secs: 9, ..Default::default() }, E::InvalidDuration);
     expect_fault(NewProject { duration_secs: 601, ..Default::default() }, E::InvalidDuration);
-    expect_fault(NewProject { duration_secs: 599, ..Default::default() }, E::InvalidDuration);
+    // Normal 1-60 day projects still work in the demo build.
+    create(&mut bench, &creator, &NewProject { project_id: 5, duration_secs: 7 * DAY, ..Default::default() })
+        .unwrap();
+}
+
+#[test]
+#[cfg(feature = "demo")]
+fn demo_build_full_cycle_in_20_seconds() {
+    // Create -> pledge -> deadline -> settle 95/5, on a 20-second clock.
+    let mut bench = Bench::new();
+    let creator = bench.wallet();
+    bench.send(initialize_treasury_ix(&creator.pubkey()), &[&creator]).unwrap();
+    let p = NewProject { target: 10 * USDC, duration_secs: 20, ..Default::default() };
+    create(&mut bench, &creator, &p).unwrap();
+    let project = project_address(&creator.pubkey(), 1);
+
+    let backer = bench.wallet();
+    let owner = backer.pubkey();
+    let backer_token = bench.usdc_account(&owner, 10 * USDC);
+    bench.send(pledge_ix(&owner, &project, &backer_token, 10 * USDC, None), &[&backer]).unwrap();
+
+    bench.warp(20);
+    let creator_owner = creator.pubkey();
+    let creator_token = bench.usdc_account(&creator_owner, 0);
+    bench.send(settle_ix(&owner, &project, Some(creator_token)), &[&backer]).unwrap();
+    assert_eq!(bench.balance(creator_token), 9_500_000);
+    assert_eq!(bench.balance(treasury_vault_address()), 500_000);
 }

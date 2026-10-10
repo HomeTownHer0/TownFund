@@ -97,10 +97,11 @@ pub fn handle_initialize_project(
     Ok(())
 }
 
-/// 1-60 days. A `demo` build also accepts exactly 10 minutes.
+/// 1-60 days. A `demo` build also accepts 10 seconds to 10 minutes.
 fn is_valid_duration(duration_secs: i64) -> bool {
     (MIN_DURATION..=MAX_DURATION).contains(&duration_secs)
-        || (cfg!(feature = "demo") && duration_secs == DEMO_DURATION)
+        || (cfg!(feature = "demo")
+            && (DEMO_MIN_DURATION..=DEMO_MAX_DURATION).contains(&duration_secs))
 }
 
 /// Creator-only: no candidates. Community: 2-5 distinct, real addresses.
