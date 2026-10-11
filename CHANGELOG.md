@@ -9,6 +9,14 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 09:05 · Second creator for "Fix Local Park"
+- New demo wallet **creator2** opens "Fix Local Park"; Backer 2's tip goes to
+  Creator 2. Creator 1 keeps "Pothole on Westheimer".
+- Live page: Creator 1 and Creator 2 boxes; TIP has a road to each, so a tip
+  travels backer -> TIP -> that project's creator. Both creators are
+  discovered from the on-chain projects (no addresses to configure).
+- TIP counter never counts down within a run.
+
 ### 08:45 · Both backers tip, through a TIP junction on the map
 - Replaces the 08:25 "Supporter" wallet (owner's call): each backer tips the
   creator 1 USDC, Backer 1 on "Pothole on Westheimer" and Backer 2 on "Fix

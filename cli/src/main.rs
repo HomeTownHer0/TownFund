@@ -5,7 +5,7 @@
 //!
 //! Every step prints an Explorer link so the audience can watch it happen.
 //! Keys: your main wallet (~/.config/solana/id.json) pays for and funds
-//! everything. Demo wallets (creator, backer1, backer2) are created once in
+//! everything. Demo wallets (creator, creator2, backer1, backer2) are created once in
 //! ~/.config/solana/townfund-demo/ and reused. No key ever leaves your Mac.
 
 use std::{
@@ -60,7 +60,7 @@ enum Cmd {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
     },
-    /// Create (once) and fund the creator / backer1 / backer2 wallets
+    /// Create (once) and fund the creator / creator2 / backer1 / backer2 wallets
     SetupWallets,
     /// Create TownFund's treasury (once per program; safe to rerun)
     InitTreasury,
@@ -398,20 +398,29 @@ fn demo_wallet(name: &str) -> Result<Keypair> {
 }
 
 struct Wallets {
+    /// Opens "Pothole on Westheimer" (Individual).
     creator: Keypair,
+    /// Opens "Fix Local Park" (Community).
+    creator2: Keypair,
     backer1: Keypair,
     backer2: Keypair,
 }
 
 impl Wallets {
-    fn named(&self) -> [(&'static str, &Keypair); 3] {
-        [("creator", &self.creator), ("backer1", &self.backer1), ("backer2", &self.backer2)]
+    fn named(&self) -> [(&'static str, &Keypair); 4] {
+        [
+            ("creator", &self.creator),
+            ("creator2", &self.creator2),
+            ("backer1", &self.backer1),
+            ("backer2", &self.backer2),
+        ]
     }
 }
 
 fn wallets() -> Result<Wallets> {
     let w = Wallets {
         creator: demo_wallet("creator")?,
+        creator2: demo_wallet("creator2")?,
         backer1: demo_wallet("backer1")?,
         backer2: demo_wallet("backer2")?,
     };
@@ -425,6 +434,7 @@ fn wallets() -> Result<Wallets> {
 fn write_public_addresses(w: &Wallets) {
     let json = serde_json::json!({
         "creator": w.creator.pubkey().to_string(),
+        "creator2": w.creator2.pubkey().to_string(),
         "backer1": w.backer1.pubkey().to_string(),
         "backer2": w.backer2.pubkey().to_string(),
     });
@@ -452,7 +462,7 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
     let w = wallets()?;
     let main = app.main.pubkey();
     // Each backer pledges and tips 1 USDC: backer1 10 + 1, backer2 5 + 1.
-    let want = [(&w.creator, 0u64), (&w.backer1, 11 * USDC), (&w.backer2, 6 * USDC)];
+    let want = [(&w.creator, 0u64), (&w.creator2, 0), (&w.backer1, 11 * USDC), (&w.backer2, 6 * USDC)];
 
     let mut ixs = vec![];
     let mut usdc_needed = 0;
@@ -527,7 +537,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let title = "Pothole on Westheimer";
 
     app.send(
-        &format!("Creator opens \"{title}\": target 10 USDC, {seconds}s"),
+        &format!("Creator 1 opens \"{title}\": target 10 USDC, {seconds}s"),
         &[create_project_ix(&creator, id, ProjectKind::Creator, 10 * USDC, seconds, title, vec![])],
         &[&w.creator],
     )?;
@@ -537,14 +547,14 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     app.send("Backer1 pledges 10 USDC → vault (escrow)", &[pledge_ix(&backer, &project, 10 * USDC, None)], &[&w.backer1])?;
     let vault = vault_address(&project);
     println!("     vault now holds {}: {}", fmt_usdc(app.usdc_at(&vault)), app.link("address", &vault.to_string()));
-    app.send("Backer1 tips the creator 1 USDC (direct, no fee)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer1])?;
+    app.send("Backer1 tips Creator 1 1 USDC (direct, no fee)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer1])?;
 
     wait_for_deadline(app, deadline)?;
     let creator_before = app.usdc(&creator);
     let treasury_before = app.usdc_at(&treasury_vault_address());
-    settle_retrying(app, &project, Some(&creator), "Settle: 95% → creator, 5% → treasury")?;
+    settle_retrying(app, &project, Some(&creator), "Settle: 95% → Creator 1, 5% → treasury")?;
     println!(
-        "     creator +{} | treasury +{} | vault now {}",
+        "     Creator 1 +{} | treasury +{} | vault now {}",
         fmt_usdc(app.usdc(&creator) - creator_before),
         fmt_usdc(app.usdc_at(&treasury_vault_address()) - treasury_before),
         fmt_usdc(app.usdc_at(&vault)),
@@ -564,7 +574,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 
 fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     println!("\n━━ Story 2: Community project FAILS → refund ━━");
-    let creator = w.creator.pubkey();
+    let creator = w.creator2.pubkey();
     let backer = w.backer2.pubkey();
     let id = new_project_id() + 1;
     let project = project_address(&creator, id);
@@ -572,9 +582,9 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let candidates = vec![Keypair::new().pubkey(), Keypair::new().pubkey()];
 
     app.send(
-        &format!("Creator opens \"{title}\": target 20 USDC, 2 contractors, {seconds}s"),
+        &format!("Creator 2 opens \"{title}\": target 20 USDC, 2 contractors, {seconds}s"),
         &[create_project_ix(&creator, id, ProjectKind::Community, 20 * USDC, seconds, title, candidates)],
-        &[&w.creator],
+        &[&w.creator2],
     )?;
     println!("     project: {}", app.link("address", &project.to_string()));
     let deadline = app.project(&project)?.deadline;
@@ -586,12 +596,12 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
         &[&w.backer2],
     )?;
     println!("     backer2: {} → {}", fmt_usdc(before), fmt_usdc(app.usdc(&backer)));
-    app.send("Backer2 tips the creator 1 USDC (tips are not refundable)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer2])?;
+    app.send("Backer2 tips Creator 2 1 USDC (tips are not refundable)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer2])?;
 
     wait_for_deadline(app, deadline)?;
     settle_retrying(app, &project, None, "Settle: 5 of 20 USDC → project FAILED")?;
     app.send("Backer2 claims refund (100%, no fee)", &[refund_ix(&backer, &project)], &[&w.backer2])?;
-    println!("     backer2 got the 5 USDC pledge back; the 1 USDC tip stays with the creator");
+    println!("     backer2 got the 5 USDC pledge back; the 1 USDC tip stays with Creator 2");
     let p = app.project(&project)?;
     println!("  ↩️  status: {:?}", p.status);
     Ok(())
@@ -642,6 +652,7 @@ fn balances(app: &App) -> Result<()> {
     for (name, who) in [
         ("main", app.main.pubkey()),
         ("creator", w.creator.pubkey()),
+        ("creator2", w.creator2.pubkey()),
         ("backer1", w.backer1.pubkey()),
         ("backer2", w.backer2.pubkey()),
     ] {

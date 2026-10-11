@@ -137,9 +137,9 @@ const DISC_BYTES = {
  * the same time, so these lookups run one after another.
  */
 const tokenAccountOf = new Map();
-async function resolveTokenAccounts(cfg) {
-  for (const owner of Object.values(cfg.wallets)) {
-    if (!owner || owner.startsWith("__") || tokenAccountOf.get(owner)) continue;
+async function resolveTokenAccounts(cfg, owners) {
+  for (const owner of owners) {
+    if (!owner || tokenAccountOf.get(owner)) continue;
     const [r] = await rpcBatch(cfg.rpc, [["getTokenAccountsByOwner", [owner, { mint: cfg.usdcMint }, { encoding: "base64", commitment: "confirmed" }]]]);
     const found = r?.value?.[0]?.pubkey;
     if (found) tokenAccountOf.set(owner, found);
@@ -157,7 +157,6 @@ const amountOf = (acct) => Number(acct?.data?.parsed?.info?.tokenAmount?.amount 
  */
 export async function fetchState(cfg = CONFIG) {
   const w = cfg.wallets;
-  await resolveTokenAccounts(cfg);
 
   const [all, slot] = await rpcBatch(cfg.rpc, [
     ["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed" }]],
@@ -172,11 +171,13 @@ export async function fetchState(cfg = CONFIG) {
     else if (sameBytes(data, DISC_BYTES.pledge)) pledges.push(decodePledge(a.pubkey, data));
     else if (sameBytes(data, DISC_BYTES.badge)) badges.push(decodeBadge(a.pubkey, data));
   }
-  const mine = projects
-    .filter((p) => p.creator === w.creator)
-    .sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
+  // Newest Individual project and newest Community project on TownFund.
+  // Their creators are discovered from the projects themselves.
+  const mine = projects.sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
   const success = mine.find((p) => p.kind === "Creator") || null;
   const community = mine.find((p) => p.kind === "Community") || null;
+  const creators = { creator: success?.creator || w.creator, creator2: community?.creator || null };
+  await resolveTokenAccounts(cfg, [creators.creator, creators.creator2, w.backer1, w.backer2]);
   const shown = [success, community].filter(Boolean);
   for (const p of shown) {
     p.pledges = pledges.filter((x) => x.project === p.address);
@@ -185,11 +186,13 @@ export async function fetchState(cfg = CONFIG) {
 
   // Every balance in one call. Unknown token accounts use the program ID
   // as a harmless placeholder (it is never a token account, so it reads 0).
+  const ta = (owner) => (owner && tokenAccountOf.get(owner)) || cfg.program;
   const keys = [
-    tokenAccountOf.get(w.creator) || cfg.program,
-    tokenAccountOf.get(w.backer1) || cfg.program,
-    tokenAccountOf.get(w.backer2) || cfg.program,
+    ta(creators.creator),
+    ta(w.backer1),
+    ta(w.backer2),
     cfg.treasuryVault,
+    ta(creators.creator2),
     ...shown.map((p) => p.vault),
   ];
   const [multi, chainTime] = await rpcBatch(cfg.rpc, [
@@ -198,7 +201,7 @@ export async function fetchState(cfg = CONFIG) {
   ], true);
   if (multi == null) throw new Error("Devnet did not answer");
   const v = multi.value;
-  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[4 + i]); });
+  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[5 + i]); });
 
   // Soulbound badges each wallet holds, across every project (newest first).
   const createdAt = new Map(projects.map((p) => [p.address, p.createdAt]));
@@ -217,7 +220,9 @@ export async function fetchState(cfg = CONFIG) {
       backer1: amountOf(v[1]),
       backer2: amountOf(v[2]),
       treasury: amountOf(v[3]),
+      creator2: creators.creator2 && creators.creator2 !== creators.creator ? amountOf(v[4]) : 0,
     },
+    creators,
     badgesOf,
     success,
     community,
