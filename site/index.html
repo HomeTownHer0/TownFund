@@ -75,9 +75,6 @@
   .node .bar-bg { fill: rgba(255,255,255,.15); }
   .node .bar { fill: var(--amber); transition: width .6s ease; }
   .node.done .bar { fill: #fff; }
-  .chip { font-weight: 800; font-size: 15px; }
-  .chip.up { fill: #7dffb0; }
-  .chip.down { fill: #ffb3bd; }
   .coin circle { fill: var(--amber); stroke: #fff; stroke-width: 2; }
   .coin text { fill: var(--amber); font-weight: 800; font-size: 16px; }
 
@@ -175,8 +172,7 @@
   </header>
 
   <section class="map" aria-label="Where the money is right now">
-    <svg id="map" viewBox="0 36 1200 509" role="img" aria-labelledby="map-title">
-      <title id="map-title">Money flow: backers pledge into project vaults and tip each project's creator directly; a vault pays its creator and the treasury, or refunds the backer.</title>
+    <svg id="map" viewBox="0 36 1200 509" role="img" aria-label="Money flow: backers pledge into project vaults and tip each project's creator directly; a vault pays its creator and the treasury, or refunds the backer.">
       <defs>
         <path id="p-b1-v1" d="M 250 135 C 330 135, 360 135, 445 135"/>
         <path id="p-b2-v2" d="M 250 385 C 330 385, 360 385, 445 385"/>
@@ -215,14 +211,12 @@
         <rect class="plate" width="220" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Backer 1</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
-        <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
         <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
       <g class="node" id="n-backer2" transform="translate(30,325)">
         <rect class="plate" width="220" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Backer 2</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
-        <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
         <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
       <g class="node vault" id="n-vault1" transform="translate(445,60)">
@@ -232,7 +226,6 @@
         <text class="n-val" x="18" y="104" data-val>–</text><text class="n-unit" x="18" y="126" data-of>USDC</text>
         <rect class="bar-bg" x="18" y="134" width="274" height="6" rx="3"/>
         <rect class="bar" x="18" y="134" width="0" height="6" rx="3" data-bar/>
-        <text class="chip" x="292" y="104" text-anchor="end" data-chip></text>
       </g>
       <g class="node vault" id="n-vault2" transform="translate(445,310)">
         <rect class="plate" width="310" height="150" rx="12"/>
@@ -241,7 +234,6 @@
         <text class="n-val" x="18" y="104" data-val>–</text><text class="n-unit" x="18" y="126" data-of>USDC</text>
         <rect class="bar-bg" x="18" y="134" width="274" height="6" rx="3"/>
         <rect class="bar" x="18" y="134" width="0" height="6" rx="3" data-bar/>
-        <text class="chip" x="292" y="104" text-anchor="end" data-chip></text>
       </g>
       <g class="node tip" id="n-tip" transform="translate(500,222)">
         <rect class="plate" width="200" height="76" rx="12"/>
@@ -253,19 +245,16 @@
         <rect class="plate" width="225" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Creator 1</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
-        <text class="chip" x="207" y="34" text-anchor="end" data-chip></text>
       </g>
       <g class="node" id="n-creator2" transform="translate(945,410)">
         <rect class="plate" width="225" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Creator 2</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
-        <text class="chip" x="207" y="34" text-anchor="end" data-chip></text>
       </g>
       <g class="node treasury" id="n-treasury" transform="translate(945,250)">
         <rect class="plate" width="225" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Town treasury</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC in fees</text>
-        <text class="chip" x="207" y="34" text-anchor="end" data-chip></text>
       </g>
       <g id="coins"></g>
     </svg>
@@ -275,7 +264,6 @@
       <span class="lg-amber">Money held in escrow</span>
       <span class="lg-red">Project missed its target</span>
       <span>★ = soulbound badges: successful projects that wallet backed</span>
-      <span id="since">Green and red numbers show the change since this run started.</span>
     </div>
   </section>
 
@@ -334,12 +322,6 @@ function setVal(node, base) {
   };
   requestAnimationFrame(step);
 }
-function setChip(node, delta) {
-  const c = $("[data-chip]", node);
-  if (!delta) { c.textContent = ""; return; }
-  c.textContent = (delta > 0 ? "+" : "−") + usdc(Math.abs(delta));
-  c.setAttribute("class", "chip " + (delta > 0 ? "up" : "down"));
-}
 
 // ---- soulbound badge star: count of successful projects backed
 function starInfo(list) {
@@ -382,7 +364,7 @@ function coin(pathId, amount) {
 }
 
 // ---- state
-let prev = null, baseline = null, baselineFor = null, chainOffset = 0, last = null;
+let prev = null, chainOffset = 0, last = null;
 
 function vaultNode(id, p) {
   const n = document.getElementById(id);
@@ -399,23 +381,9 @@ const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
 function render(st) {
   const b = st.balances;
-  // A run starts when a new Individual project appears; the Community
-  // project opened later in the same run must not reset the baseline.
-  const runKey = st.success?.address || st.community?.address || "";
-  if (runKey !== baselineFor) {
-    const fresh = st.success && st.success.status === "Active" && st.success.vaultBalance === 0;
-    // start from the balances seen just before this run's project appeared
-    baseline = { ...(prev ? prev.balances : b) };
-    baselineFor = runKey;
-    $("#since").textContent = fresh || prev
-      ? "Green and red numbers show the change since this run started."
-      : "Green and red numbers show the change since you opened this page.";
-  }
-
   for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-creator2", "creator2"], ["n-treasury", "treasury"]]) {
     const n = document.getElementById(id);
     setVal(n, b[key]);
-    setChip(n, b[key] - baseline[key]);
   }
   setStar(document.getElementById("n-backer1"), st.badgesOf?.backer1 || []);
   setStar(document.getElementById("n-backer2"), st.badgesOf?.backer2 || []);
@@ -546,7 +514,8 @@ async function refreshFeed() {
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
   const items = await fetchActivity(txCache, labels, cfg, 12);
   // TIP box: total tipped to the creator since this run's first project opened.
-  const runStart = Math.min(...[last.success, last.community].filter(Boolean).map((p) => p.createdAt));
+  // A run starts when its Individual project opens (the first step of every run).
+  const runStart = (last.success || last.community)?.createdAt ?? 0;
   const tipped = items
     .filter((a) => a.name === "Tip" && a.ok && a.time >= runStart)
     .reduce((sum, a) => sum + (a.moves.find((m) => (m.who === "Creator 1" || m.who === "Creator 2") && m.amount > 0)?.amount || 0), 0);

@@ -9,6 +9,15 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 09:45 · Cleaner boxes; TIP resets each run
+- Removed the green/red "change since this run" tags (+10.5, −11, …) from
+  every box, and the legend line about them.
+- Fixed: TIP carried the previous run's tips until "Fix Local Park"
+  opened. A run now starts when its "Pothole on Westheimer" project opens,
+  so TIP drops to 0 right away (verified: 2 → 0 → 1 → 2).
+- The map's screen-reader description no longer pops up as a tooltip
+  when hovering over Backer 1.
+
 ### 09:10 · "Latest move" line on the map
 - Every transaction is spelled out under the map as it lands, from the real
   decoded transaction, e.g. "Tip: Backer 2 −1 → Creator 2 +1" or
