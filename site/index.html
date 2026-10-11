@@ -323,19 +323,33 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 // ---- live number tweening
-const shown = new Map();
-function setVal(node, base) {
-  const el = $("[data-val]", node);
-  const from = shown.get(node.id);
-  shown.set(node.id, base);
-  if (from == null || reduceMotion || from === base) { el.textContent = usdc(base); return; }
-  const t0 = performance.now(), dur = 900;
-  const step = (t) => {
-    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-    el.textContent = usdc(from + (base - from) * e);
-    if (k < 1) requestAnimationFrame(step);
+// A box that RECEIVES money waits until its coin arrives (delay, ms), so
+// the number never changes before the coin lands. A later update for the
+// same box takes over from whatever value is on screen.
+const shown = new Map(), disp = new Map(), pending = new Map();
+function setVal(node, base, delay = 0) {
+  const el = $("[data-val]", node), id = node.id;
+  const target = shown.get(id);
+  if (target === base) return; // already shown, or on its way
+  shown.set(id, base);
+  clearTimeout(pending.get(id));
+  pending.delete(id);
+  if (target == null || reduceMotion) { el.textContent = usdc(base); disp.set(id, base); return; }
+  const go = () => {
+    pending.delete(id);
+    const from = disp.get(id) ?? target, t0 = performance.now(), dur = 900;
+    const step = (t) => {
+      if (shown.get(id) !== base) return; // a newer update took over
+      const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      const v = from + (base - from) * e;
+      disp.set(id, v);
+      el.textContent = usdc(v);
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   };
-  requestAnimationFrame(step);
+  if (delay > 0 && !document.hidden) pending.set(id, setTimeout(go, delay));
+  else go();
 }
 
 // ---- soulbound badge star: count of successful projects backed
@@ -382,7 +396,7 @@ function coin(pathId, amount) {
 // ---- state
 let prev = null, chainOffset = 0, last = null;
 
-function vaultNode(id, p) {
+function vaultNode(id, p, delay = 0) {
   const n = document.getElementById(id);
   n.setAttribute("class", "node vault" + (p?.status === "Succeeded" ? " done" : p?.status === "Failed" || p?.status === "Cancelled" ? " failed" : ""));
   $("[data-title]", n).textContent = p ? truncate(p.title, 24) : "Project vault";
@@ -390,21 +404,18 @@ function vaultNode(id, p) {
   $("[data-of]", n).textContent = p ? `of ${usdc(p.target)} USDC target` : "USDC";
   const shownAmount = p ? (p.status === "Active" ? p.vaultBalance : p.status === "Succeeded" ? p.target : p.vaultBalance) : 0;
   $("[data-bar]", n).setAttribute("width", p ? Math.min(274, 274 * (p.status === "Succeeded" ? 1 : p.totalPledged / p.target)) : 0);
-  setVal(n, p ? p.vaultBalance : 0);
+  setVal(n, p ? p.vaultBalance : 0, delay);
   return shownAmount;
 }
 const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
+let tipArriveAt = 0; // when the newest tip coin reaches the TIP junction
 function render(st) {
   const b = st.balances;
-  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-creator2", "creator2"], ["n-treasury", "treasury"]]) {
-    const n = document.getElementById(id);
-    setVal(n, b[key]);
-  }
-  setStar(document.getElementById("n-backer1"), st.badgesOf?.backer1 || []);
-  setStar(document.getElementById("n-backer2"), st.badgesOf?.backer2 || []);
-  vaultNode("n-vault1", st.success);
-  vaultNode("n-vault2", st.community);
+  // When each receiving box's coin arrives (ms from now).
+  const arrive = {};
+  const at = (id, ms) => { arrive[id] = Math.max(arrive[id] || 0, ms); };
+  const TIP_LEG2 = COIN_MS - 300; // TIP -> creator leg starts as leg 1 arrives
 
   // coins: infer movements from what changed since the last update
   if (prev) {
@@ -413,8 +424,11 @@ function render(st) {
     const vd = (now, before) => (!now ? 0 : before && now.address === before.address ? now.vaultBalance - before.vaultBalance : now.vaultBalance);
     const v1 = vd(st.success, prev.success);
     const v2 = vd(st.community, prev.community);
-    if (v1 > 0) coin("p-b1-v1", v1);
-    if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 500); }
+    if (v1 > 0) { coin("p-b1-v1", v1); at("n-vault1", COIN_MS); }
+    if (v1 < 0) {
+      coin("p-v1-cr", -v1 - d("treasury")); at("n-creator", COIN_MS);
+      setTimeout(() => coin("p-v1-tr", d("treasury")), 500); at("n-treasury", 500 + COIN_MS);
+    }
     // Tips: a creator's gain that isn't the 95% payout. The backer whose
     // balance dropped by more than it pledged is the tipper. The coin goes
     // backer -> TIP -> that project's creator.
@@ -422,18 +436,29 @@ function render(st) {
     if (sameCreators) {
       const payout = v1 < 0 ? -v1 - d("treasury") : 0;
       const drop1 = -d("backer1") - Math.max(v1, 0), drop2 = -d("backer2") - Math.max(v2, 0);
-      const tipCoin = (amount, out) => {
+      const tipCoin = (amount, out, node) => {
         if (amount <= 0) return;
         const road = drop1 >= amount ? "p-b1-tip" : drop2 >= amount ? "p-b2-tip" : null;
-        // second leg (TIP -> creator) starts as the first one arrives
-        if (road) { coin(road, amount); setTimeout(() => coin(out, amount), COIN_MS - 300); }
+        if (!road) return;
+        coin(road, amount);
+        tipArriveAt = performance.now() + COIN_MS;
+        setTimeout(() => coin(out, amount), TIP_LEG2);
+        at(node, TIP_LEG2 + COIN_MS);
       };
-      tipCoin(d("creator") - payout, "p-tip-cr");
-      tipCoin(d("creator2"), "p-tip-cr2");
+      tipCoin(d("creator") - payout, "p-tip-cr", "n-creator");
+      tipCoin(d("creator2"), "p-tip-cr2", "n-creator2");
     }
-    if (v2 > 0) coin("p-b2-v2", v2);
-    if (v2 < 0) coin("p-v2-b2", -v2);
+    if (v2 > 0) { coin("p-b2-v2", v2); at("n-vault2", COIN_MS); }
+    if (v2 < 0) { coin("p-v2-b2", -v2); at("n-backer2", COIN_MS); }
   }
+
+  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-creator2", "creator2"], ["n-treasury", "treasury"]]) {
+    setVal(document.getElementById(id), b[key], arrive[id]);
+  }
+  setStar(document.getElementById("n-backer1"), st.badgesOf?.backer1 || []);
+  setStar(document.getElementById("n-backer2"), st.badgesOf?.backer2 || []);
+  vaultNode("n-vault1", st.success, arrive["n-vault1"]);
+  vaultNode("n-vault2", st.community, arrive["n-vault2"]);
 
   renderProject($("#proj1"), st.success, st);
   renderProject($("#proj2"), st.community, st);
@@ -543,7 +568,7 @@ async function refreshFeed() {
   // Never count down within a run, even if older history isn't returned.
   if (tipRun.start !== runStart) tipRun = { start: runStart, max: 0 };
   tipRun.max = Math.max(tipRun.max, tipped);
-  setVal(document.getElementById("n-tip"), tipRun.max);
+  setVal(document.getElementById("n-tip"), tipRun.max, tipArriveAt - performance.now());
   const first = seen.size === 0;
   // "Latest move" line on the map: the newest transaction, spelled out.
   const newest = items[0];

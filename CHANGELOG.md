@@ -9,6 +9,14 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 12:45 · Boxes change when the coin lands
+- Fixed: Creator 2 showed Backer 2's tip before the coin reached it (and
+  the same for other boxes). The page now waits for each coin: a box that
+  receives money changes the moment its coin arrives (TIP after the first
+  leg, the creator after the second); the sender's box drops as the coin
+  leaves. Verified on a local chain: every box changed within 0.1 s of its
+  coin's arrival.
+
 ### 11:00 · "Run demo" button, auto-reset, slower coins
 - `demo` now resets itself 15 s after it finishes (`--reset-after`, `0` to
   keep the final state): creators emptied back to the main wallet, backers
