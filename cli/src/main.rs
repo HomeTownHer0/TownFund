@@ -63,6 +63,9 @@ enum Cmd {
         /// (creators to 0, backers refilled). 0 = don't reset.
         #[arg(long, default_value_t = 15)]
         reset_after: u64,
+        /// Pause after each step (seconds) so the live page keeps up. 0 = none.
+        #[arg(long, default_value_t = 3)]
+        pace: u64,
     },
     /// Run a small local server so the live page's "Run demo" button can
     /// start the demo on this computer. Listens on 127.0.0.1 only.
@@ -73,6 +76,8 @@ enum Cmd {
         seconds: i64,
         #[arg(long, default_value_t = 15)]
         reset_after: u64,
+        #[arg(long, default_value_t = 3)]
+        pace: u64,
     },
     /// Create (once) and fund the creator / creator2 / backer1 / backer2 wallets
     SetupWallets,
@@ -103,6 +108,10 @@ enum Cmd {
 
 // ===================================================================== app
 
+/// Pause after each demo step (ms), so the live page's map can show each
+/// move before the next one starts. 0 outside the demo stories.
+static PACE_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
 struct App {
     rpc: RpcClient,
     url: String,
@@ -129,6 +138,10 @@ impl App {
             .with_context(|| format!("{label} failed"))?;
         println!("  ✅ {label}");
         println!("     {}", self.link("tx", &sig.to_string()));
+        let pace = PACE_MS.load(std::sync::atomic::Ordering::Relaxed);
+        if pace > 0 {
+            sleep(Duration::from_millis(pace));
+        }
         Ok(())
     }
 
@@ -856,11 +869,13 @@ fn make_app(url: &str, keypair: &str) -> Result<App> {
 }
 
 /// The whole Demo Day story, then (optionally) an automatic reset.
-fn run_demo(app: &App, seconds: i64, reset_after: u64, on_reset: &dyn Fn()) -> Result<()> {
+fn run_demo(app: &App, seconds: i64, pace: u64, reset_after: u64, on_reset: &dyn Fn()) -> Result<()> {
     let w = setup_wallets(app)?;
     init_treasury(app)?;
-    demo_success(app, &w, seconds)?;
-    demo_fail(app, &w, seconds)?;
+    PACE_MS.store(pace * 1000, std::sync::atomic::Ordering::Relaxed);
+    let stories = demo_success(app, &w, seconds).and_then(|_| demo_fail(app, &w, seconds));
+    PACE_MS.store(0, std::sync::atomic::Ordering::Relaxed);
+    stories?;
     println!("\n✅ Demo complete.");
     if reset_after > 0 {
         println!("   Resetting in {reset_after} s (Ctrl+C to keep the final state)…");
@@ -897,7 +912,7 @@ fn origin_ok(origin: &str) -> bool {
 /// Terminal output can be shown on the page as well as here.
 /// Binds to 127.0.0.1, so only this computer can reach it, and only the
 /// TownFund page (or a local page) may call it from a browser.
-fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64) -> Result<()> {
+fn serve(url: String, keypair: String, port: u16, seconds: i64, pace: u64, reset_after: u64) -> Result<()> {
     use std::{
         io::{Read, Write},
         net::TcpListener,
@@ -1025,6 +1040,7 @@ fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64
                         Command::new(exe)
                             .args(["--url", &url, "--keypair", &keypair, "demo"])
                             .args(["--seconds", &seconds.to_string(), "--reset-after", &reset_after.to_string()])
+                            .args(["--pace", &pace.to_string()])
                             .stdout(Stdio::piped())
                             .stderr(Stdio::piped())
                             .spawn()
@@ -1108,16 +1124,19 @@ fn main() -> Result<()> {
         Cmd::Demo {
             seconds,
             reset_after,
-        } => run_demo(&app, seconds, reset_after, &|| {})?,
+            pace,
+        } => run_demo(&app, seconds, pace, reset_after, &|| {})?,
         Cmd::Serve {
             port,
             seconds,
             reset_after,
+            pace,
         } => serve(
             cli.url.clone(),
             cli.keypair.clone(),
             port,
             seconds,
+            pace,
             reset_after,
         )?,
         Cmd::SetupWallets => {

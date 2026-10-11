@@ -211,6 +211,9 @@ Explorer link for every step:
    pledges 5 of 20 USDC and tips Creator 2 1 USDC, deadline passes, settle
    marks it Failed, Backer 2 gets the 5 back, and the tip stays with Creator 2
    (tips are not refundable)
+Each step pauses 3 s (`--pace N`, `0` for none) so the live page can show
+every move before the next one starts; a full run takes about a minute.
+
 4. **Resets** 15 s after it finishes (`--reset-after N` to change, `0` to
    keep the final state): creators' USDC goes back to your main wallet and
    both backers are topped up to pledge + tip (11 and 6 USDC), ready for the

@@ -698,7 +698,19 @@ const POLL_MS = 2500, FULL_EVERY_MS = 20000;
 let lastSig = undefined, lastFull = 0, feedPending = true, backoff = 0;
 const stamp = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
+let tickTimer = null, ticking = false, kickAgain = false;
+// Check the chain right now (used on the presenter's computer when the
+// runner reports a confirmed transaction, so the map doesn't wait for the
+// next 2.5 s check).
+function kick() {
+  lastFull = 0;
+  feedPending = true;
+  if (ticking) { kickAgain = true; return; }
+  clearTimeout(tickTimer);
+  tick();
+}
 async function tick() {
+  ticking = true;
   let wait = POLL_MS;
   try {
     const sig = await fetchLatestSignature(cfg);
@@ -735,7 +747,9 @@ async function tick() {
       liveText.textContent = "Reconnecting to Devnet…";
     }
   }
-  setTimeout(tick, document.hidden ? Math.max(wait, 10000) : wait);
+  ticking = false;
+  if (kickAgain) { kickAgain = false; wait = 0; lastFull = 0; feedPending = true; }
+  tickTimer = setTimeout(tick, document.hidden ? Math.max(wait, 10000) : wait);
 }
 tick();
 
@@ -759,7 +773,7 @@ if (presenter) {
   box.hidden = false;
   const label = { running: "Running…", resetting: "Resetting…" };
   let prevState = "idle", nextLine = null;
-  const runnerLog = makeConsole($("#runner-log"), { gap: 60 });
+  const runnerLog = makeConsole($("#runner-log"), { gap: 25 });
   // One Terminal line -> console line: colors, and Explorer URLs as short links.
   const termLine = (raw) => {
     let cls = "";
@@ -785,6 +799,8 @@ if (presenter) {
         $("#consoles").classList.add("two");
         if (nextLine == null) runnerLog.print([{ cls: "prompt", html: "$ cargo run -p townfund-cli -- serve" }], true);
         if (j.lines.length) runnerLog.print(j.lines.map(termLine), nextLine == null);
+        // a transaction just confirmed: update the map now
+        if (nextLine != null && j.lines.some((l) => l.includes("explorer.solana.com/tx/"))) kick();
         nextLine = j.next;
       }
       btn.disabled = j.state !== "idle";
@@ -795,7 +811,7 @@ if (presenter) {
       btn.textContent = "Run demo";
       note.textContent = "Runner not found. In Terminal: cargo run -p townfund-cli -- serve";
     }
-    setTimeout(pollRunner, prevState === "idle" ? 2000 : 700);
+    setTimeout(pollRunner, prevState === "idle" ? 2000 : 400);
   }
   btn.addEventListener("click", async () => {
     btn.disabled = true;

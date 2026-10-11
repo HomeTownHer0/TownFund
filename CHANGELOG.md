@@ -9,6 +9,21 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 16:20 · Map keeps pace with the Terminal
+- Measured the delay: the demo sent "open, pledge, tip" within about 1 s,
+  so coins piled up and the map ran ~2 s behind the Terminal and the
+  program log up to ~4.5 s (more on public Devnet, which the page checks
+  every 2.5 s).
+- Demo now pauses 3 s after each step (`--pace`, also for `serve`), so each
+  move gets its own moment. A full run takes about a minute.
+- On the presenter's computer, a confirmed transaction in the Terminal pane
+  makes the page check the chain at once instead of waiting for its next
+  check. The Terminal pane types faster and the runner is asked more often
+  while running.
+- Verified on a local chain: each Terminal step, its coin and its program
+  log entry appear within 0.1 s of each other. **Restart `serve` after
+  pulling.**
+
 ### 14:40 · One link for everything
 - The plain link (`hometownher0.github.io/TownFund/`) now shows the Run demo
   button and Terminal pane on the presenter's computer. Open `?presenter`
