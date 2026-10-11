@@ -233,7 +233,8 @@ window, with each transaction ID linking to Explorer.
 
 The button and Terminal pane appear only on the presenter's computer. Turn
 that on once per browser by opening
-`https://hometownher0.github.io/TownFund/?presenter`; after that the plain
+**[hometownher0.github.io/TownFund/?presenter](https://hometownher0.github.io/TownFund/?presenter)**;
+after that the plain
 link shows them on that computer (`?presenter=off` turns it off). Visitors
 always see the plain read-only page.
 
