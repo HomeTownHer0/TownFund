@@ -501,7 +501,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let backer = w.backer1.pubkey();
     let id = new_project_id();
     let project = project_address(&creator, id);
-    let title = "Salina food pantry roof";
+    let title = "Pothole on Westheimer";
 
     app.send(
         &format!("Creator opens \"{title}\": target 10 USDC, {seconds}s"),
@@ -545,7 +545,7 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let backer = w.backer2.pubkey();
     let id = new_project_id() + 1;
     let project = project_address(&creator, id);
-    let title = "Community park cleanup";
+    let title = "Fix Local Park";
     let candidates = vec![Keypair::new().pubkey(), Keypair::new().pubkey()];
 
     app.send(
