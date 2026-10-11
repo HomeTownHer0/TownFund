@@ -9,6 +9,15 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-10
 
+### 20:05 · Live status page
+- `site/`: read-only page that shows every demo wallet, both project vaults
+  and the town treasury straight from Devnet, refreshing every 2.5 s. Money
+  map with coins moving along each road, per-run change tags, countdowns,
+  step-by-step project progress, badge card, activity feed with Explorer links.
+- Published to GitHub Pages by `.github/workflows/pages.yml`.
+- Tested in a headless browser against a local chain during full demo runs
+  (pledge, tip, settle, badge, failure, refund) and at phone width.
+
 ### 19:15 · Audit pass ([ed2fe39](https://github.com/HomeTownHer0/townfund/commit/ed2fe39))
 - README rewritten for reviewers: Devnet links, instruction table, account
   map, each security property mapped to the test that proves it, code map.

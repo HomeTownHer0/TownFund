@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TownFund Live</title>
+<meta name="description" content="Watch TownFund move money through escrow on Solana Devnet, live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --asphalt: #25282a;
+    --asphalt-2: #2f3335;
+    --asphalt-3: #3a3f42;
+    --paint: #ecebe4;
+    --curb: #9aa0a4;
+    --sign: #0e6b3e;
+    --sign-hi: #13854e;
+    --amber: #f2a900;
+    --signal: #e0475a;
+    --radius-sign: 10px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--asphalt);
+    color: var(--paint);
+    font-family: "Overpass", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--paint); text-decoration-color: var(--curb); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--amber); }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; border-radius: 4px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  /* ---------- header ---------- */
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .brand h1 {
+    margin: 0; font-weight: 800; font-size: 34px; letter-spacing: -0.5px;
+    background: var(--sign); color: #fff; padding: 2px 16px 0; border-radius: var(--radius-sign);
+    box-shadow: inset 0 0 0 3px var(--sign), inset 0 0 0 5px #fff;
+  }
+  .brand p { margin: 0; color: var(--curb); }
+  .live { display: flex; align-items: center; gap: 8px; color: var(--curb); font-size: 15px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--curb); }
+  .live.ok .dot { background: #3ccf7d; box-shadow: 0 0 0 4px rgba(60,207,125,.18); }
+  .live.err .dot { background: var(--signal); }
+
+  /* ---------- flow map (the hero) ---------- */
+  .map { background: var(--asphalt-2); border-radius: 14px; padding: 8px; }
+  .map svg { display: block; width: 100%; height: auto; }
+  @media (max-width: 760px) {
+    /* keep the map readable on phones: it scrolls sideways instead of shrinking */
+    .map { overflow-x: auto; }
+    .map svg { min-width: 720px; }
+  }
+  .road { fill: none; stroke: var(--asphalt-3); stroke-width: 14; stroke-linecap: round; }
+  .lane { fill: none; stroke: #6d7377; stroke-width: 2; stroke-dasharray: 10 12; }
+  .road-label { fill: var(--curb); font-size: 15px; }
+  .node rect.plate { fill: var(--sign); stroke: #fff; stroke-width: 3; }
+  .node.vault rect.plate { fill: #3b2f0b; stroke: var(--amber); }
+  .node.vault.done rect.plate { fill: var(--sign); stroke: #fff; }
+  .node.vault.failed rect.plate { fill: #3d1a20; stroke: var(--signal); }
+  .node.treasury rect.plate { fill: #123a5c; stroke: #fff; }
+  .node text { fill: #fff; }
+  .node .n-name { font-weight: 800; font-size: 20px; }
+  .node .n-sub { font-size: 14px; fill: rgba(255,255,255,.75); }
+  .node .n-val { font-weight: 800; font-size: 34px; }
+  .node .n-unit { font-size: 15px; fill: rgba(255,255,255,.75); }
+  .node .bar-bg { fill: rgba(255,255,255,.15); }
+  .node .bar { fill: var(--amber); transition: width .6s ease; }
+  .node.done .bar { fill: #fff; }
+  .chip { font-weight: 800; font-size: 15px; }
+  .chip.up { fill: #7dffb0; }
+  .chip.down { fill: #ffb3bd; }
+  .coin circle { fill: var(--amber); stroke: #fff; stroke-width: 2; }
+  .coin text { fill: var(--amber); font-weight: 800; font-size: 16px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 10px 4px 0; color: var(--curb); font-size: 14px; }
+  .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .lg-green::before { background: var(--sign); box-shadow: inset 0 0 0 2px #fff; }
+  .lg-amber::before { background: #3b2f0b; box-shadow: inset 0 0 0 2px var(--amber); }
+  .lg-red::before { background: #3d1a20; box-shadow: inset 0 0 0 2px var(--signal); }
+
+  /* ---------- projects ---------- */
+  .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 16px; }
+  .project { background: var(--asphalt-2); border-radius: 14px; padding: 20px 22px; border-top: 6px solid var(--amber); }
+  .project.done { border-top-color: #3ccf7d; }
+  .project.failed { border-top-color: var(--signal); }
+  .project h2 { margin: 0; font-size: 26px; font-weight: 800; line-height: 1.2; }
+  .project .kind { color: var(--curb); margin: 2px 0 14px; }
+  .status { display: inline-block; font-weight: 800; padding: 2px 10px; border-radius: 6px; background: var(--asphalt-3); margin-left: 8px; font-size: 16px; vertical-align: 3px; }
+  .status.Succeeded { background: var(--sign); color: #fff; }
+  .status.Failed { background: var(--signal); color: #fff; }
+  .status.Active { background: var(--amber); color: #2a2100; }
+  .clock { display: flex; align-items: baseline; gap: 12px; margin: 4px 0 10px; }
+  .clock .big { font-size: 64px; font-weight: 800; line-height: 1; }
+  .clock .what { color: var(--curb); }
+  .progress { height: 14px; background: var(--asphalt-3); border-radius: 7px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--amber); width: 0; transition: width .6s ease; }
+  .project.done .progress > div { background: #3ccf7d; }
+  .project.failed .progress > div { background: var(--signal); }
+  .progress-label { display: flex; justify-content: space-between; color: var(--curb); font-size: 15px; margin-top: 4px; }
+  ol.steps { list-style: none; padding: 0; margin: 16px 0 6px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; counter-reset: step; }
+  ol.steps li { counter-increment: step; font-size: 14px; color: var(--curb); padding-top: 34px; position: relative; text-align: center; line-height: 1.25; }
+  ol.steps li::before {
+    content: counter(step); position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--asphalt-3); display: grid; place-items: center;
+    font-weight: 800; font-size: 14px; color: var(--curb); background: var(--asphalt-2);
+  }
+  ol.steps li.on { color: var(--paint); }
+  ol.steps li.on::before { content: "✓"; background: #3ccf7d; border-color: #3ccf7d; color: #0b2a18; }
+  ol.steps li.bad::before { content: "✕"; background: var(--signal); border-color: var(--signal); color: #fff; }
+  ol.steps li.now::before { border-color: var(--amber); color: var(--amber); }
+  .backers { margin: 14px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--asphalt-3); }
+  .backers li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--asphalt-3); }
+  .backers .muted { color: var(--curb); }
+  .badge {
+    margin-top: 16px; display: flex; gap: 14px; align-items: center; text-decoration: none; color: #fff;
+    background: linear-gradient(135deg, #1b4d33, #0e6b3e); border-radius: 12px; padding: 14px 16px;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.6);
+  }
+  .badge .seal { width: 54px; height: 54px; flex: none; border-radius: 50%; background: var(--amber); color: #2a2100; display: grid; place-items: center; font-weight: 800; font-size: 26px; box-shadow: 0 0 0 4px rgba(242,169,0,.25); }
+  .badge strong { display: block; font-size: 18px; }
+  .badge:hover strong { text-decoration: underline; text-decoration-color: var(--amber); }
+  .badge small { color: rgba(255,255,255,.8); font-size: 14px; }
+  .empty { color: var(--curb); }
+
+  /* ---------- lower row ---------- */
+  .lower { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 860px) { .lower { grid-template-columns: 1fr; } }
+  .panel { background: var(--asphalt-2); border-radius: 14px; padding: 18px 22px; }
+  .panel h3 { margin: 0 0 10px; font-size: 20px; font-weight: 800; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { padding: 10px 0; border-bottom: 1px solid var(--asphalt-3); display: grid; grid-template-columns: 74px 1fr; gap: 10px; }
+  .feed li.fresh { animation: fresh 2.4s ease-out; }
+  @keyframes fresh { from { background: rgba(242,169,0,.18); } to { background: transparent; } }
+  .feed time { color: var(--curb); font-size: 14px; padding-top: 2px; }
+  .feed .moves { color: var(--curb); font-size: 15px; }
+  .feed .plus { color: #7dffb0; }
+  .feed .minus { color: #ffb3bd; }
+  table.accts { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.accts td { padding: 8px 0; border-bottom: 1px solid var(--asphalt-3); vertical-align: top; }
+  table.accts td:last-child { text-align: right; }
+  table.accts .who { font-weight: 600; }
+  footer { margin-top: 22px; color: var(--curb); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 20px; }
+
+  @media (max-width: 600px) {
+    .brand h1 { font-size: 28px; }
+    .clock .big { font-size: 48px; }
+    ol.steps li { font-size: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .coin { display: none; }
+    .feed li.fresh { animation: none; }
+    .progress > div, .node .bar { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>TownFund</h1>
+      <p>Community fundraising on Solana. Live from Devnet, with test USDC.</p>
+    </div>
+    <div class="live" id="live" role="status"><span class="dot"></span><span id="live-text">Connecting to Devnet…</span></div>
+  </header>
+
+  <section class="map" aria-label="Where the money is right now">
+    <svg id="map" viewBox="0 0 1200 545" role="img" aria-labelledby="map-title">
+      <title id="map-title">Money flow: backers pledge into project vaults; vaults pay the creator and the treasury, or refund the backer.</title>
+      <defs>
+        <path id="p-b1-v1" d="M 250 135 C 330 135, 360 135, 445 135"/>
+        <path id="p-b2-v2" d="M 250 385 C 330 385, 360 385, 445 385"/>
+        <path id="p-v1-cr" d="M 755 120 C 830 120, 860 100, 945 100"/>
+        <path id="p-v1-tr" d="M 755 150 C 840 150, 850 300, 945 300"/>
+        <path id="p-b1-cr" d="M 140 75 C 140 20, 1050 10, 1050 50"/>
+        <path id="p-v2-b2" d="M 600 445 C 600 510, 140 510, 140 445"/>
+      </defs>
+      <!-- roads -->
+      <g>
+        <use href="#p-b1-v1" class="road"/><use href="#p-b1-v1" class="lane"/>
+        <use href="#p-b2-v2" class="road"/><use href="#p-b2-v2" class="lane"/>
+        <use href="#p-v1-cr" class="road"/><use href="#p-v1-cr" class="lane"/>
+        <use href="#p-v1-tr" class="road"/><use href="#p-v1-tr" class="lane"/>
+        <use href="#p-b1-cr" class="road" style="stroke-width:8"/><use href="#p-b1-cr" class="lane"/>
+        <use href="#p-v2-b2" class="road" style="stroke-width:8"/><use href="#p-v2-b2" class="lane"/>
+        <text class="road-label" x="350" y="122" text-anchor="middle">pledge</text>
+        <text class="road-label" x="350" y="372" text-anchor="middle">pledge</text>
+        <text class="road-label" x="850" y="92" text-anchor="middle">95% payout</text>
+        <text class="road-label" x="900" y="235" text-anchor="middle">5% fee</text>
+        <text class="road-label" x="600" y="14" text-anchor="middle">tip, straight to the creator</text>
+        <text class="road-label" x="370" y="536" text-anchor="middle">refund if the target is missed</text>
+      </g>
+
+      <!-- nodes -->
+      <g class="node" id="n-backer1" transform="translate(30,75)">
+        <rect class="plate" width="220" height="120" rx="12"/>
+        <text class="n-name" x="18" y="34">Backer 1</text>
+        <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
+        <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node" id="n-backer2" transform="translate(30,325)">
+        <rect class="plate" width="220" height="120" rx="12"/>
+        <text class="n-name" x="18" y="34">Backer 2</text>
+        <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
+        <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node vault" id="n-vault1" transform="translate(445,60)">
+        <rect class="plate" width="310" height="150" rx="12"/>
+        <text class="n-name" x="18" y="34" data-title>Project vault</text>
+        <text class="n-sub" x="18" y="56" data-sub>escrow, owned by the program</text>
+        <text class="n-val" x="18" y="104" data-val>–</text><text class="n-unit" x="18" y="126" data-of>USDC</text>
+        <rect class="bar-bg" x="18" y="134" width="274" height="6" rx="3"/>
+        <rect class="bar" x="18" y="134" width="0" height="6" rx="3" data-bar/>
+        <text class="chip" x="292" y="104" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node vault" id="n-vault2" transform="translate(445,310)">
+        <rect class="plate" width="310" height="150" rx="12"/>
+        <text class="n-name" x="18" y="34" data-title>Project vault</text>
+        <text class="n-sub" x="18" y="56" data-sub>escrow, owned by the program</text>
+        <text class="n-val" x="18" y="104" data-val>–</text><text class="n-unit" x="18" y="126" data-of>USDC</text>
+        <rect class="bar-bg" x="18" y="134" width="274" height="6" rx="3"/>
+        <rect class="bar" x="18" y="134" width="0" height="6" rx="3" data-bar/>
+        <text class="chip" x="292" y="104" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node" id="n-creator" transform="translate(945,50)">
+        <rect class="plate" width="225" height="120" rx="12"/>
+        <text class="n-name" x="18" y="34">Creator</text>
+        <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
+        <text class="chip" x="207" y="34" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node treasury" id="n-treasury" transform="translate(945,250)">
+        <rect class="plate" width="225" height="120" rx="12"/>
+        <text class="n-name" x="18" y="34">Town treasury</text>
+        <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC in fees</text>
+        <text class="chip" x="207" y="34" text-anchor="end" data-chip></text>
+      </g>
+      <g id="coins"></g>
+    </svg>
+    <div class="legend">
+      <span class="lg-green">Wallet, or a project that paid out</span>
+      <span class="lg-amber">Money held in escrow</span>
+      <span class="lg-red">Project missed its target</span>
+      <span id="since">Green and red numbers show the change since this run started.</span>
+    </div>
+  </section>
+
+  <section class="projects" aria-label="Projects">
+    <article class="project" id="proj1"><p class="empty">Waiting for an individual project…</p></article>
+    <article class="project" id="proj2"><p class="empty">Waiting for a community project…</p></article>
+  </section>
+
+  <section class="lower">
+    <div class="panel">
+      <h3>Activity on the program</h3>
+      <ul class="feed" id="feed"><li class="empty" style="display:block">Loading recent transactions…</li></ul>
+    </div>
+    <div class="panel">
+      <h3>Accounts</h3>
+      <table class="accts" id="accts"></table>
+    </div>
+  </section>
+
+  <footer>
+    <span>This page only reads from Solana. It can't move money.</span>
+    <a id="prog-link" href="#">Program on Solana Explorer</a>
+    <a href="https://github.com/HomeTownHer0/townfund">Code on GitHub</a>
+  </footer>
+</div>
+
+<script type="module">
+import { CONFIG, fetchState, fetchActivity, usdc, short } from "./townfund.js";
+
+// ---- config (URL parameters override, for testing against a local chain)
+const q = new URLSearchParams(location.search);
+const cfg = structuredClone(CONFIG);
+if (q.get("rpc")) cfg.rpc = q.get("rpc");
+for (const k of ["creator", "backer1", "backer2"]) if (q.get(k)) cfg.wallets[k] = q.get(k);
+const custom = cfg.rpc !== CONFIG.rpc;
+const explorer = (kind, id) => `https://explorer.solana.com/${kind}/${id}?` +
+  (custom ? `cluster=custom&customUrl=${encodeURIComponent(cfg.rpc)}` : "cluster=devnet");
+document.getElementById("prog-link").href = explorer("address", cfg.program);
+
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+// ---- live number tweening
+const shown = new Map();
+function setVal(node, base) {
+  const el = $("[data-val]", node);
+  const from = shown.get(node.id);
+  shown.set(node.id, base);
+  if (from == null || reduceMotion || from === base) { el.textContent = usdc(base); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = usdc(from + (base - from) * e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function setChip(node, delta) {
+  const c = $("[data-chip]", node);
+  if (!delta) { c.textContent = ""; return; }
+  c.textContent = (delta > 0 ? "+" : "−") + usdc(Math.abs(delta));
+  c.setAttribute("class", "chip " + (delta > 0 ? "up" : "down"));
+}
+
+// ---- coins moving along a road
+function coin(pathId, amount) {
+  if (reduceMotion || document.hidden) return;
+  const path = document.getElementById(pathId);
+  const len = path.getTotalLength();
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "coin");
+  g.innerHTML = `<circle r="11"/><text x="16" y="-12">${amount > 0 ? usdc(amount) : ""}</text>`;
+  $("#coins").appendChild(g);
+  const t0 = performance.now(), dur = 1600;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    const p = path.getPointAtLength(e * len);
+    g.setAttribute("transform", `translate(${p.x},${p.y})`);
+    g.style.opacity = k > .9 ? (1 - k) * 10 : 1;
+    if (k < 1) requestAnimationFrame(step); else g.remove();
+  };
+  requestAnimationFrame(step);
+}
+
+// ---- state
+let prev = null, baseline = null, baselineFor = null, chainOffset = 0, last = null;
+
+function vaultNode(id, p) {
+  const n = document.getElementById(id);
+  n.setAttribute("class", "node vault" + (p?.status === "Succeeded" ? " done" : p?.status === "Failed" || p?.status === "Cancelled" ? " failed" : ""));
+  $("[data-title]", n).textContent = p ? truncate(p.title, 24) : "Project vault";
+  $("[data-sub]", n).textContent = p ? (p.kind === "Creator" ? "Individual project, escrow" : "Community project, escrow") : "escrow, owned by the program";
+  $("[data-of]", n).textContent = p ? `of ${usdc(p.target)} USDC target` : "USDC";
+  const shownAmount = p ? (p.status === "Active" ? p.vaultBalance : p.status === "Succeeded" ? p.target : p.vaultBalance) : 0;
+  $("[data-bar]", n).setAttribute("width", p ? Math.min(274, 274 * (p.status === "Succeeded" ? 1 : p.totalPledged / p.target)) : 0);
+  setVal(n, p ? p.vaultBalance : 0);
+  return shownAmount;
+}
+const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+
+function render(st) {
+  const b = st.balances;
+  // A run starts when a new Individual project appears; the Community
+  // project opened later in the same run must not reset the baseline.
+  const runKey = st.success?.address || st.community?.address || "";
+  if (runKey !== baselineFor) {
+    const fresh = st.success && st.success.status === "Active" && st.success.vaultBalance === 0;
+    // start from the balances seen just before this run's project appeared
+    baseline = { ...(prev ? prev.balances : b) };
+    baselineFor = runKey;
+    $("#since").textContent = fresh || prev
+      ? "Green and red numbers show the change since this run started."
+      : "Green and red numbers show the change since you opened this page.";
+  }
+
+  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-treasury", "treasury"]]) {
+    const n = document.getElementById(id);
+    setVal(n, b[key]);
+    setChip(n, b[key] - baseline[key]);
+  }
+  vaultNode("n-vault1", st.success);
+  vaultNode("n-vault2", st.community);
+
+  // coins: infer movements from what changed since the last update
+  if (prev) {
+    const d = (k) => b[k] - prev.balances[k];
+    // compare a vault only with the same project's vault last time
+    const vd = (now, before) => (now && before && now.address === before.address ? now.vaultBalance - before.vaultBalance : now && !before ? now.vaultBalance : 0);
+    const v1 = vd(st.success, prev.success);
+    const v2 = vd(st.community, prev.community);
+    if (v1 > 0) coin("p-b1-v1", v1);
+    if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 250); }
+    if (v1 === 0 && d("creator") > 0 && d("backer1") < 0) coin("p-b1-cr", d("creator"));
+    if (v2 > 0) coin("p-b2-v2", v2);
+    if (v2 < 0) coin("p-v2-b2", -v2);
+  }
+
+  renderProject($("#proj1"), st.success, st);
+  renderProject($("#proj2"), st.community, st);
+  renderAccounts(st);
+  prev = st;
+}
+
+function steps(p, now) {
+  const funded = p.totalPledged > 0 || p.status === "Succeeded" || p.backerCount > 0;
+  const due = now >= p.deadline || p.status !== "Active";
+  const s = [["Opened", true], ["Pledges in", funded], ["Deadline", due]];
+  if (p.kind === "Creator") {
+    s.push(["Paid out 95/5", p.status === "Succeeded", p.status === "Failed"]);
+    s.push(["Backer badge", p.badges.length > 0]);
+  } else {
+    s.push(["Target missed", p.status === "Failed" || p.status === "Cancelled", p.status === "Succeeded"]);
+    s.push(["Refunded", (p.status === "Failed" || p.status === "Cancelled") && p.backerCount > 0 && p.totalPledged === 0]);
+  }
+  let marked = false;
+  return s.map(([label, on, bad]) => {
+    let cls = on ? "on" : bad ? "bad" : "";
+    if (!on && !bad && !marked) { cls = "now"; marked = true; }
+    return `<li class="${cls}">${label}</li>`;
+  }).join("");
+}
+
+function renderProject(el, p, st) {
+  if (!p) return;
+  const now = chainNow();
+  const left = p.deadline - now;
+  el.className = "project" + (p.status === "Succeeded" ? " done" : p.status === "Failed" || p.status === "Cancelled" ? " failed" : "");
+  let clock;
+  if (p.status === "Active" && left > 0) clock = `<span class="big" data-deadline="${p.deadline}">${fmtLeft(left)}</span><span class="what">until the deadline</span>`;
+  else if (p.status === "Active") clock = `<span class="big">0:00</span><span class="what">deadline passed, waiting for settle</span>`;
+  else if (p.status === "Succeeded") clock = `<span class="big">✓</span><span class="what">target reached and paid out</span>`;
+  else clock = `<span class="big">✕</span><span class="what">${p.status === "Cancelled" ? "cancelled by the creator" : "target missed"}, backers refunded in full</span>`;
+
+  const pct = Math.min(100, (p.status === "Succeeded" ? p.target : p.totalPledged) / p.target * 100);
+  const backers = p.pledges.length
+    ? p.pledges.map((pl) => `<li><span>${esc(label(pl.backer))}${pl.vote != null ? ` <span class="muted">voted for contractor #${pl.vote}</span>` : ""}</span><span>${usdc(pl.amount)} USDC</span></li>`).join("")
+    : `<li><span class="muted">${p.status === "Failed" || p.status === "Cancelled" ? "All pledges refunded" : "No pledges yet"}</span><span></span></li>`;
+  const badge = p.badges.map((bg) => `
+    <a class="badge" href="${explorer("address", bg.asset)}">
+      <div class="seal" aria-hidden="true">★</div>
+      <div><strong>TownFund Backer: ${esc(p.title)}</strong>
+      <small>Soulbound NFT held by ${esc(label(bg.backer))}. It can never be transferred or sold.</small></div>
+    </a>`).join("");
+
+  el.innerHTML = `
+    <h2>${esc(p.title)}<span class="status ${p.status}">${p.status}</span></h2>
+    <p class="kind">${p.kind === "Creator" ? "Individual project: the creator is paid on success" : `Community project: backers elect one of ${p.candidates.length} contractors`}</p>
+    <div class="clock">${clock}</div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><div style="width:${pct}%"></div></div>
+    <div class="progress-label"><span>${usdc(p.status === "Succeeded" ? p.target : p.totalPledged)} of ${usdc(p.target)} USDC pledged</span><span>${p.backerCount} backer${p.backerCount === 1 ? "" : "s"}</span></div>
+    <ol class="steps">${steps(p, now)}</ol>
+    <ul class="backers">${backers}</ul>
+    ${badge}
+    <p style="margin:12px 0 0;font-size:14px"><a href="${explorer("address", p.address)}">Project record on Explorer</a>&nbsp;&nbsp;&nbsp;<a href="${explorer("address", p.vault)}">Vault on Explorer</a></p>`;
+}
+
+function label(addr) {
+  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { creator: "Creator", backer1: "Backer 1", backer2: "Backer 2" }[k];
+  return short(addr);
+}
+
+function renderAccounts(st) {
+  const rows = [
+    ["Creator", cfg.wallets.creator, st.balances.creator],
+    ["Backer 1", cfg.wallets.backer1, st.balances.backer1],
+    ["Backer 2", cfg.wallets.backer2, st.balances.backer2],
+    ["Town treasury vault", cfg.treasuryVault, st.balances.treasury],
+  ];
+  if (st.success) rows.push([`Vault: ${st.success.title}`, st.success.vault, st.success.vaultBalance]);
+  if (st.community) rows.push([`Vault: ${st.community.title}`, st.community.vault, st.community.vaultBalance]);
+  $("#accts").innerHTML = rows.map(([n, a, v]) =>
+    `<tr><td><span class="who">${esc(n)}</span><br><a href="${explorer("address", a)}">${short(a)}</a></td><td>${usdc(v)} USDC</td></tr>`).join("");
+}
+
+// ---- chain clock (for countdowns)
+function chainNow() { return Math.floor(Date.now() / 1000 + chainOffset); }
+const fmtLeft = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s % 60)).padStart(2, "0")}`;
+setInterval(() => {
+  const now = chainNow();
+  for (const el of document.querySelectorAll("[data-deadline]")) {
+    const left = Number(el.dataset.deadline) - now;
+    el.textContent = fmtLeft(Math.max(0, left));
+  }
+}, 250);
+
+// ---- activity feed
+const txCache = new Map();
+const seen = new Set();
+async function refreshFeed() {
+  if (!last) return;
+  const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.treasury]: "Treasury" };
+  if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
+  if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
+  try {
+    const items = await fetchActivity(txCache, labels, cfg, 12);
+    const first = seen.size === 0;
+    $("#feed").innerHTML = items.length ? items.map((a) => {
+      const isNew = !first && !seen.has(a.signature);
+      seen.add(a.signature);
+      const t = a.time ? new Date(a.time * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "";
+      const moves = a.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(", ");
+      return `<li class="${isNew ? "fresh" : ""}"><time>${t}</time><div><a href="${explorer("tx", a.signature)}">${esc(a.name)}</a>${a.ok ? "" : " (failed)"}${moves ? `<div class="moves">${moves}</div>` : ""}</div></li>`;
+    }).join("") : `<li class="empty" style="display:block">No transactions yet.</li>`;
+  } catch { /* the next refresh retries */ }
+}
+
+// ---- polling loop
+const live = $("#live"), liveText = $("#live-text");
+let failures = 0;
+async function tick() {
+  try {
+    const st = await fetchState(cfg);
+    if (st.chainTime) chainOffset = st.chainTime - st.fetchedAt / 1000;
+    last = st;
+    render(st);
+    failures = 0;
+    live.className = "live ok";
+    liveText.textContent = `Live on Devnet${custom ? " (custom RPC)" : ""}, updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
+  } catch (e) {
+    failures++;
+    live.className = "live err";
+    liveText.textContent = "Reconnecting to Devnet…";
+  }
+  setTimeout(tick, Math.min(15000, 2500 * Math.max(1, failures)));
+}
+tick();
+refreshFeed();
+setInterval(refreshFeed, 6000);
+</script>
+</body>
+</html>

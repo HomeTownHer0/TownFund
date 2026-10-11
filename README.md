@@ -41,6 +41,15 @@ in Solana School Fall 2026
 
 ## For reviewers
 
+### Watch it live
+
+**[hometownher0.github.io/townfund](https://hometownher0.github.io/townfund/)**: a
+read-only page that shows every wallet, both project vaults and the town
+treasury straight from Devnet, updating every few seconds. Open it, then run
+the demo (below): coins move along the money map, balances count up and down,
+and each project's steps tick off as they happen. Nothing to install; it
+can't move money.
+
 ### Verify it on Devnet (2 minutes)
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
@@ -115,6 +124,7 @@ mutation-checked: deliberately breaking the rule made its test fail.
 | `programs/townfund/src/error.rs` | Every reason an instruction is refused |
 | `programs/townfund/tests/` | 62 tests (63 in the demo build) |
 | `cli/src/main.rs` | `townfund` command-line tool used for the demo |
+| `site/` | Live status page (published to GitHub Pages) |
 
 ## Known limitations (roadmap, not bugs)
 
@@ -141,6 +151,7 @@ mutation-checked: deliberately breaking the rule made its test fail.
 | Devnet | Deployed (demo build): [`FdaMK3…PXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet) | ✅ |
 | Demo tool | `townfund` CLI: full Demo Day story with Explorer links | ✅ |
 | Devnet run | Full demo on Devnet (links above) | ✅ |
+| Live page | Read-only status page on GitHub Pages | ✅ |
 | Demo Day | October 16, 2026 | ⏳ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
 
