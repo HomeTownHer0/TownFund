@@ -9,6 +9,13 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 13:05 · README and GitHub brought up to date
+- README: status (button + auto-reset), what TIP and the ★ mean on the map,
+  boxes change as coins land, presenter row in the build plan, runner in the
+  code map and Safety. Build badge points at the renamed repo
+  (`HomeTownHer0/TownFund`).
+- GitHub: repository description, live-page link and topics set.
+
 ### 12:45 · Boxes change when the coin lands
 - Fixed: Creator 2 showed Backer 2's tip before the coin reached it (and
   the same for other boxes). The page now waits for each coin: a box that

@@ -1,6 +1,6 @@
 # TownFund
 
-[![build-and-test](https://github.com/HomeTownHer0/townfund/actions/workflows/build.yml/badge.svg)](https://github.com/HomeTownHer0/townfund/actions/workflows/build.yml)
+[![build-and-test](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml/badge.svg)](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml)
 
 A Solana program for community fundraising: the first building block of a
 community job board. Backers pledge USDC to a project. If it hits its target
@@ -13,7 +13,8 @@ Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 in Solana School Fall 2026
 
 > **Status:** V1 program complete (62 tests), live on Devnet, and the full
-> demo has run successfully on Devnet (Oct 10, 2026).
+> demo runs on Devnet from a button on the [live page](https://hometownher0.github.io/TownFund/),
+> resetting itself after each run (Oct 11, 2026).
 > Every revision is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works (V1, "Creators + Backers")
@@ -46,9 +47,16 @@ in Solana School Fall 2026
 **[hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)**: a
 read-only page that shows every wallet, both project vaults and the town
 treasury straight from Devnet, updating every few seconds. Open it, then run
-the demo (below): coins move along the money map, balances count up and down,
+the demo (below): coins move along the money map, and each box changes the
+moment its coin arrives. A "Latest move" line spells out every transaction,
 and each project's steps tick off as they happen. Nothing to install; it
 can't move money.
+
+On the map, **TIP** is a junction, not an account: on-chain a tip goes
+straight from the backer to the creator. The coin passes through TIP so the
+audience sees which backer tipped which creator, and TIP shows the total
+tipped this run. The ★ next to a backer counts its soulbound badges and links
+to the newest one on Explorer.
 
 ### Verify it on Devnet (2 minutes)
 
@@ -124,7 +132,7 @@ mutation-checked: deliberately breaking the rule made its test fail.
 | `programs/townfund/src/constants.rs` | Limits, seeds, USDC mint |
 | `programs/townfund/src/error.rs` | Every reason an instruction is refused |
 | `programs/townfund/tests/` | 62 tests (63 in the demo build) |
-| `cli/src/main.rs` | `townfund` command-line tool used for the demo |
+| `cli/src/main.rs` | `townfund` command-line tool: the demo, reset, and the local runner behind the Run demo button |
 | `site/` | Live status page (published to GitHub Pages) |
 
 ## Known limitations (roadmap, not bugs)
@@ -153,6 +161,7 @@ mutation-checked: deliberately breaking the rule made its test fail.
 | Demo tool | `townfund` CLI: full Demo Day story with Explorer links | ✅ |
 | Devnet run | Full demo on Devnet (links above) | ✅ |
 | Live page | Read-only status page on GitHub Pages | ✅ |
+| Presenter | Run demo button on the live page, automatic reset after each run | ✅ |
 | Demo Day | October 16, 2026 | ⏳ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
 
@@ -199,7 +208,6 @@ Explorer link for every step:
    pledges 5 of 20 USDC and tips Creator 2 1 USDC, deadline passes, settle
    marks it Failed, Backer 2 gets the 5 back, and the tip stays with Creator 2
    (tips are not refundable)
-
 4. **Resets** 15 s after it finishes (`--reset-after N` to change, `0` to
    keep the final state): creators' USDC goes back to your main wallet and
    both backers are topped up to pledge + tip (11 and 6 USDC), ready for the
@@ -237,4 +245,7 @@ project; never for failed projects.
 
 - **Never commit a keypair.** `.gitignore` blocks `*-keypair.json`, `id.json`, `.env`.
   Demo wallet keys live outside the repo in `~/.config/solana/townfund-demo/`.
+- The Run demo button can't move money by itself: it asks the runner on the
+  presenter's own computer (`serve`, reachable only from that computer) to
+  start the demo, and the runner signs with keys that never leave it.
 - Devnet only. No mainnet, no real money.
