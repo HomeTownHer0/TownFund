@@ -9,6 +9,12 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 09:10 · "Latest move" line on the map
+- Every transaction is spelled out under the map as it lands, from the real
+  decoded transaction, e.g. "Tip: Backer 2 −1 → Creator 2 +1" or
+  "Refund: Vault: Fix Local Park −5 → Backer 2 +5", so no move is missed
+  even if its coin animation is.
+
 ### 09:05 · Second creator for "Fix Local Park"
 - New demo wallet **creator2** opens "Fix Local Park"; Backer 2's tip goes to
   Creator 2. Creator 1 keeps "Pothole on Westheimer".

@@ -81,6 +81,12 @@
   .coin circle { fill: var(--amber); stroke: #fff; stroke-width: 2; }
   .coin text { fill: var(--amber); font-weight: 800; font-size: 16px; }
 
+  .latest { display: flex; align-items: baseline; gap: 10px; margin: 6px 4px 0; padding: 10px 14px; border-radius: 10px; background: var(--asphalt-3); min-height: 46px; }
+  .latest .what { font-weight: 800; color: var(--amber); white-space: nowrap; }
+  .latest .moves { color: var(--paint); }
+  .latest .plus { color: #7dffb0; }
+  .latest .minus { color: #ffb3bd; }
+  .latest.fresh { animation: fresh 2.4s ease-out; }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 10px 4px 0; color: var(--curb); font-size: 14px; }
   .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
   .lg-green::before { background: var(--sign); box-shadow: inset 0 0 0 2px #fff; }
@@ -263,6 +269,7 @@
       </g>
       <g id="coins"></g>
     </svg>
+    <div class="latest" id="latest" role="status" aria-live="polite"><span class="what">Latest move</span><span class="moves">Waiting for the next transaction…</span></div>
     <div class="legend">
       <span class="lg-green">Wallet, or a project that paid out</span>
       <span class="lg-amber">Money held in escrow</span>
@@ -548,6 +555,17 @@ async function refreshFeed() {
   tipRun.max = Math.max(tipRun.max, tipped);
   setVal(document.getElementById("n-tip"), tipRun.max);
   const first = seen.size === 0;
+  // "Latest move" line on the map: the newest transaction, spelled out.
+  const newest = items[0];
+  if (newest) {
+    const el = $("#latest");
+    const moves = newest.moves.length
+      ? newest.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(" → ")
+      : "no money moved";
+    const t = newest.time ? new Date(newest.time * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "";
+    el.innerHTML = `<span class="what">${esc(newest.name)}</span><span class="moves">${moves}</span><span class="moves" style="margin-left:auto;color:var(--curb)">${t}</span>`;
+    if (!first && !seen.has(newest.signature)) { el.classList.remove("fresh"); void el.offsetWidth; el.classList.add("fresh"); }
+  }
   $("#feed").innerHTML = items.length ? items.map((a) => {
     const isNew = !first && !seen.has(a.signature);
     seen.add(a.signature);
