@@ -28,7 +28,7 @@ use solana_rpc_client::rpc_client::RpcClient;
 use solana_signer::Signer;
 use solana_transaction::Transaction;
 use townfund::{
-    Project, ProjectKind, ProjectStatus, BADGE_AUTHORITY_SEED, BADGE_SEED, PLEDGE_SEED,
+    Project, ProjectKind, BADGE_AUTHORITY_SEED, BADGE_SEED, PLEDGE_SEED,
     PROJECT_SEED, TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED,
 };
 
@@ -65,11 +65,13 @@ enum Cmd {
     /// Create TownFund's treasury (once per program; safe to rerun)
     InitTreasury,
     /// Individual project: pledge + tip -> settle 95/5 -> soulbound badge
+    /// (run setup-wallets first)
     DemoSuccess {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
     },
     /// Community project: under target -> fails -> backer refunded 100%
+    /// (run setup-wallets first)
     DemoFail {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
@@ -579,13 +581,19 @@ fn settle_retrying(app: &App, project: &Pubkey, payee: Option<&Pubkey>, label: &
     for attempt in 1..=10 {
         match app.send(label, &[settle_ix(&app.main.pubkey(), project, payee)], &[&app.main]) {
             Ok(()) => return Ok(()),
-            Err(e) if attempt < 10 && format!("{e:?}").contains("DeadlineNotReached") => {
+            Err(e) if attempt < 10 && is_deadline_not_reached(&e) => {
                 sleep(Duration::from_secs(2));
             }
             Err(e) => return Err(e),
         }
     }
     unreachable!()
+}
+
+/// DeadlineNotReached is TownFund fault 6016 (0x1780).
+fn is_deadline_not_reached(e: &anyhow::Error) -> bool {
+    let text = format!("{e:?}");
+    text.contains("DeadlineNotReached") || text.contains("0x1780")
 }
 
 fn status(app: &App, address: &Pubkey) -> Result<()> {
@@ -604,7 +612,6 @@ fn status(app: &App, address: &Pubkey) -> Result<()> {
             println!("  #{i} {c}  votes: {}", p.votes[i]);
         }
     }
-    let _ = ProjectStatus::Active;
     Ok(())
 }
 
@@ -688,6 +695,7 @@ fn main() -> Result<()> {
         }
         Cmd::DemoFail { seconds } => {
             let w = wallets()?;
+            init_treasury(&app)?;
             demo_fail(&app, &w, seconds)?;
         }
         Cmd::Status { project } => status(&app, &project)?,
