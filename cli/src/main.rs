@@ -5,7 +5,7 @@
 //!
 //! Every step prints an Explorer link so the audience can watch it happen.
 //! Keys: your main wallet (~/.config/solana/id.json) pays for and funds
-//! everything. Demo wallets (creator, backer1, backer2, supporter) are created once in
+//! everything. Demo wallets (creator, backer1, backer2) are created once in
 //! ~/.config/solana/townfund-demo/ and reused. No key ever leaves your Mac.
 
 use std::{
@@ -60,7 +60,7 @@ enum Cmd {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
     },
-    /// Create (once) and fund the creator / backer1 / backer2 / supporter wallets
+    /// Create (once) and fund the creator / backer1 / backer2 wallets
     SetupWallets,
     /// Create TownFund's treasury (once per program; safe to rerun)
     InitTreasury,
@@ -401,18 +401,11 @@ struct Wallets {
     creator: Keypair,
     backer1: Keypair,
     backer2: Keypair,
-    /// Only tips; never pledges.
-    supporter: Keypair,
 }
 
 impl Wallets {
-    fn named(&self) -> [(&'static str, &Keypair); 4] {
-        [
-            ("creator", &self.creator),
-            ("backer1", &self.backer1),
-            ("backer2", &self.backer2),
-            ("supporter", &self.supporter),
-        ]
+    fn named(&self) -> [(&'static str, &Keypair); 3] {
+        [("creator", &self.creator), ("backer1", &self.backer1), ("backer2", &self.backer2)]
     }
 }
 
@@ -421,7 +414,6 @@ fn wallets() -> Result<Wallets> {
         creator: demo_wallet("creator")?,
         backer1: demo_wallet("backer1")?,
         backer2: demo_wallet("backer2")?,
-        supporter: demo_wallet("supporter")?,
     };
     write_public_addresses(&w);
     Ok(w)
@@ -435,7 +427,6 @@ fn write_public_addresses(w: &Wallets) {
         "creator": w.creator.pubkey().to_string(),
         "backer1": w.backer1.pubkey().to_string(),
         "backer2": w.backer2.pubkey().to_string(),
-        "supporter": w.supporter.pubkey().to_string(),
     });
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../demo-wallets.json");
     let _ = fs::write(path, serde_json::to_string_pretty(&json).unwrap_or_default() + "\n");
@@ -460,13 +451,8 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
     println!("\n━━ Demo wallets ━━");
     let w = wallets()?;
     let main = app.main.pubkey();
-    // backer1: pledge 10. backer2: pledge 5. supporter: one 1 USDC tip per story.
-    let want = [
-        (&w.creator, 0u64),
-        (&w.backer1, 10 * USDC),
-        (&w.backer2, 5 * USDC),
-        (&w.supporter, 2 * USDC),
-    ];
+    // Each backer pledges and tips 1 USDC: backer1 10 + 1, backer2 5 + 1.
+    let want = [(&w.creator, 0u64), (&w.backer1, 11 * USDC), (&w.backer2, 6 * USDC)];
 
     let mut ixs = vec![];
     let mut usdc_needed = 0;
@@ -495,7 +481,7 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
     app.send("Fund demo wallets (SOL for fees, USDC for pledges and tips)", &ixs, &[&app.main])?;
     for (name, k) in w.named() {
         let who = k.pubkey();
-        println!("  {name:9} {who}  {} | {}", fmt_sol(app.sol(&who)), fmt_usdc(app.usdc(&who)));
+        println!("  {name:8} {who}  {} | {}", fmt_sol(app.sol(&who)), fmt_usdc(app.usdc(&who)));
     }
     Ok(w)
 }
@@ -551,8 +537,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     app.send("Backer1 pledges 10 USDC → vault (escrow)", &[pledge_ix(&backer, &project, 10 * USDC, None)], &[&w.backer1])?;
     let vault = vault_address(&project);
     println!("     vault now holds {}: {}", fmt_usdc(app.usdc_at(&vault)), app.link("address", &vault.to_string()));
-    let supporter = w.supporter.pubkey();
-    app.send("Supporter tips the creator 1 USDC (direct, no fee)", &[tip_ix(&supporter, &project, &creator, USDC)], &[&w.supporter])?;
+    app.send("Backer1 tips the creator 1 USDC (direct, no fee)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer1])?;
 
     wait_for_deadline(app, deadline)?;
     let creator_before = app.usdc(&creator);
@@ -601,13 +586,12 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
         &[&w.backer2],
     )?;
     println!("     backer2: {} → {}", fmt_usdc(before), fmt_usdc(app.usdc(&backer)));
-    let supporter = w.supporter.pubkey();
-    app.send("Supporter tips the creator 1 USDC (tips are not refundable)", &[tip_ix(&supporter, &project, &creator, USDC)], &[&w.supporter])?;
+    app.send("Backer2 tips the creator 1 USDC (tips are not refundable)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer2])?;
 
     wait_for_deadline(app, deadline)?;
     settle_retrying(app, &project, None, "Settle: 5 of 20 USDC → project FAILED")?;
     app.send("Backer2 claims refund (100%, no fee)", &[refund_ix(&backer, &project)], &[&w.backer2])?;
-    println!("     backer2 back to {} (started with {}); the supporter's tip stays with the creator", fmt_usdc(app.usdc(&backer)), fmt_usdc(before));
+    println!("     backer2 got the 5 USDC pledge back; the 1 USDC tip stays with the creator");
     let p = app.project(&project)?;
     println!("  ↩️  status: {:?}", p.status);
     Ok(())
@@ -660,7 +644,6 @@ fn balances(app: &App) -> Result<()> {
         ("creator", w.creator.pubkey()),
         ("backer1", w.backer1.pubkey()),
         ("backer2", w.backer2.pubkey()),
-        ("supporter", w.supporter.pubkey()),
     ] {
         println!("{name:8} {who}  {} | {}", fmt_sol(app.sol(&who)), fmt_usdc(app.usdc(&who)));
     }
@@ -688,6 +671,19 @@ fn recycle(app: &App) -> Result<()> {
             &[usdc_transfer_ix(&k.pubkey(), &main, amount)],
             &[&app.main, k],
         )?;
+    }
+    // Earlier versions had a "supporter" tipping wallet; empty it if present.
+    let old = expand("~/.config/solana/townfund-demo/supporter.json");
+    if old.exists() {
+        let k = read_keypair(&old)?;
+        let amount = app.usdc(&k.pubkey());
+        if amount > 0 {
+            app.send(
+                &format!("old supporter wallet returns {}", fmt_usdc(amount)),
+                &[usdc_transfer_ix(&k.pubkey(), &main, amount)],
+                &[&app.main, &k],
+            )?;
+        }
     }
     println!("  main wallet now has {}", fmt_usdc(app.usdc(&main)));
     Ok(())

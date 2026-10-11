@@ -124,7 +124,7 @@
   a.star:hover { text-decoration: underline; }
   .star-svg text { fill: var(--amber); font-weight: 800; font-size: 17px; }
   .star-svg:hover text { text-decoration: underline; }
-  .node.supporter rect.plate { fill: #4a2c55; stroke: #fff; }
+  .node.tip rect.plate { fill: #4a2c55; stroke: #fff; }
   .empty { color: var(--curb); }
 
   /* ---------- lower row ---------- */
@@ -170,13 +170,15 @@
 
   <section class="map" aria-label="Where the money is right now">
     <svg id="map" viewBox="0 36 1200 509" role="img" aria-labelledby="map-title">
-      <title id="map-title">Money flow: backers pledge into project vaults; a supporter tips the creator directly; vaults pay the creator and the treasury, or refund the backer.</title>
+      <title id="map-title">Money flow: backers pledge into project vaults and tip the creator directly; vaults pay the creator and the treasury, or refund the backer.</title>
       <defs>
         <path id="p-b1-v1" d="M 250 135 C 330 135, 360 135, 445 135"/>
         <path id="p-b2-v2" d="M 250 385 C 330 385, 360 385, 445 385"/>
         <path id="p-v1-cr" d="M 755 120 C 830 120, 860 100, 945 100"/>
         <path id="p-v1-tr" d="M 755 150 C 840 150, 850 300, 945 300"/>
-        <path id="p-sup-cr" d="M 250 260 C 560 260, 800 262, 880 222 S 975 185, 1000 170"/>
+        <path id="p-b1-tip" d="M 250 180 C 360 180, 390 250, 500 250"/>
+        <path id="p-b2-tip" d="M 250 340 C 360 340, 390 270, 500 270"/>
+        <path id="p-tip-cr" d="M 700 260 C 800 260, 870 236, 910 214 S 985 180, 1000 170"/>
         <path id="p-v2-b2" d="M 600 445 C 600 510, 140 510, 140 445"/>
       </defs>
       <!-- roads -->
@@ -185,13 +187,17 @@
         <use href="#p-b2-v2" class="road"/><use href="#p-b2-v2" class="lane"/>
         <use href="#p-v1-cr" class="road"/><use href="#p-v1-cr" class="lane"/>
         <use href="#p-v1-tr" class="road"/><use href="#p-v1-tr" class="lane"/>
-        <use href="#p-sup-cr" class="road" style="stroke-width:8"/><use href="#p-sup-cr" class="lane"/>
+        <use href="#p-b1-tip" class="road" style="stroke-width:8"/><use href="#p-b1-tip" class="lane"/>
+        <use href="#p-b2-tip" class="road" style="stroke-width:8"/><use href="#p-b2-tip" class="lane"/>
+        <use href="#p-tip-cr" class="road" style="stroke-width:8"/><use href="#p-tip-cr" class="lane"/>
         <use href="#p-v2-b2" class="road" style="stroke-width:8"/><use href="#p-v2-b2" class="lane"/>
         <text class="road-label" x="350" y="122" text-anchor="middle">pledge</text>
         <text class="road-label" x="350" y="372" text-anchor="middle">pledge</text>
         <text class="road-label" x="850" y="92" text-anchor="middle">95% payout</text>
         <text class="road-label" x="905" y="192" text-anchor="middle">5% fee</text>
-        <text class="road-label" x="520" y="250" text-anchor="middle">tip, straight to the creator</text>
+        <text class="road-label" x="300" y="210" text-anchor="middle">tip</text>
+        <text class="road-label" x="300" y="322" text-anchor="middle">tip</text>
+        <text class="road-label" x="800" y="296" text-anchor="middle">to the creator, no fee</text>
         <text class="road-label" x="370" y="536" text-anchor="middle">refund if the target is missed</text>
       </g>
 
@@ -210,12 +216,6 @@
         <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
         <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
-      <g class="node supporter" id="n-supporter" transform="translate(30,212)">
-        <rect class="plate" width="220" height="96" rx="12"/>
-        <text class="n-name" x="18" y="30">Supporter</text>
-        <text class="n-val" x="18" y="70" data-val style="font-size:28px">–</text><text class="n-unit" x="18" y="88">USDC, tips only</text>
-        <text class="chip" x="202" y="30" text-anchor="end" data-chip></text>
-      </g>
       <g class="node vault" id="n-vault1" transform="translate(445,60)">
         <rect class="plate" width="310" height="150" rx="12"/>
         <text class="n-name" x="18" y="34" data-title>Project vault</text>
@@ -233,6 +233,12 @@
         <rect class="bar-bg" x="18" y="134" width="274" height="6" rx="3"/>
         <rect class="bar" x="18" y="134" width="0" height="6" rx="3" data-bar/>
         <text class="chip" x="292" y="104" text-anchor="end" data-chip></text>
+      </g>
+      <g class="node tip" id="n-tip" transform="translate(500,222)">
+        <rect class="plate" width="200" height="76" rx="12"/>
+        <text class="n-name" x="16" y="28">TIP</text>
+        <text class="n-val" x="184" y="31" text-anchor="end" data-val style="font-size:26px">0</text>
+        <text class="n-unit" x="16" y="58">USDC tipped this run</text>
       </g>
       <g class="node" id="n-creator" transform="translate(945,50)">
         <rect class="plate" width="225" height="120" rx="12"/>
@@ -287,7 +293,7 @@ import { CONFIG, fetchState, fetchActivity, fetchLatestSignature, RateLimited, u
 const q = new URLSearchParams(location.search);
 const cfg = structuredClone(CONFIG);
 if (q.get("rpc")) cfg.rpc = q.get("rpc");
-for (const k of ["creator", "backer1", "backer2", "supporter"]) if (q.get(k)) cfg.wallets[k] = q.get(k);
+for (const k of ["creator", "backer1", "backer2"]) if (q.get(k)) cfg.wallets[k] = q.get(k);
 const custom = cfg.rpc !== CONFIG.rpc;
 const explorer = (kind, id) => `https://explorer.solana.com/${kind}/${id}?` +
   (custom ? `cluster=custom&customUrl=${encodeURIComponent(cfg.rpc)}` : "cluster=devnet");
@@ -390,7 +396,7 @@ function render(st) {
       : "Green and red numbers show the change since you opened this page.";
   }
 
-  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-supporter", "supporter"], ["n-creator", "creator"], ["n-treasury", "treasury"]]) {
+  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-treasury", "treasury"]]) {
     const n = document.getElementById(id);
     setVal(n, b[key]);
     setChip(n, b[key] - baseline[key]);
@@ -409,7 +415,15 @@ function render(st) {
     const v2 = vd(st.community, prev.community);
     if (v1 > 0) coin("p-b1-v1", v1);
     if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 250); }
-    if (d("supporter") < 0 && d("creator") > 0) coin("p-sup-cr", -d("supporter"));
+    // Tips: creator gains that aren't the 95% payout. The backer whose
+    // balance dropped by more than it pledged is the tipper.
+    const payout = v1 < 0 ? -v1 - d("treasury") : 0;
+    const tip = d("creator") - payout;
+    if (tip > 0) {
+      const drop1 = -d("backer1") - Math.max(v1, 0), drop2 = -d("backer2") - Math.max(v2, 0);
+      const road = drop1 >= tip ? "p-b1-tip" : drop2 >= tip ? "p-b2-tip" : null;
+      if (road) { coin(road, tip); setTimeout(() => coin("p-tip-cr", tip), 900); }
+    }
     if (v2 > 0) coin("p-b2-v2", v2);
     if (v2 < 0) coin("p-v2-b2", -v2);
   }
@@ -466,7 +480,7 @@ function renderProject(el, p, st) {
 }
 
 function label(addr) {
-  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { creator: "Creator", backer1: "Backer 1", backer2: "Backer 2", supporter: "Supporter" }[k];
+  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { creator: "Creator", backer1: "Backer 1", backer2: "Backer 2" }[k];
   return short(addr);
 }
 
@@ -475,7 +489,6 @@ function renderAccounts(st) {
     ["Creator", cfg.wallets.creator, st.balances.creator],
     ["Backer 1", cfg.wallets.backer1, st.balances.backer1],
     ["Backer 2", cfg.wallets.backer2, st.balances.backer2],
-    ["Supporter (tips only)", cfg.wallets.supporter, st.balances.supporter],
     ["Town treasury vault", cfg.treasuryVault, st.balances.treasury],
   ];
   if (st.success) rows.push([`Vault: ${st.success.title}`, st.success.vault, st.success.vaultBalance]);
@@ -500,10 +513,16 @@ const txCache = new Map();
 const seen = new Set();
 async function refreshFeed() {
   if (!last) return true;
-  const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.wallets.supporter]: "Supporter", [cfg.treasury]: "Treasury" };
+  const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.treasury]: "Treasury" };
   if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
   const items = await fetchActivity(txCache, labels, cfg, 12);
+  // TIP box: total tipped to the creator since this run's first project opened.
+  const runStart = Math.min(...[last.success, last.community].filter(Boolean).map((p) => p.createdAt));
+  const tipped = items
+    .filter((a) => a.name === "Tip" && a.ok && a.time >= runStart)
+    .reduce((sum, a) => sum + (a.moves.find((m) => m.who === "Creator" && m.amount > 0)?.amount || 0), 0);
+  setVal(document.getElementById("n-tip"), tipped);
   const first = seen.size === 0;
   $("#feed").innerHTML = items.length ? items.map((a) => {
     const isNew = !first && !seen.has(a.signature);

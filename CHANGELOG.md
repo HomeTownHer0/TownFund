@@ -9,22 +9,24 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
-### 08:25 · Supporter (tipper) and compact badge star
-- New demo wallet **Supporter**: only tips. It tips the creator 1 USDC in
-  both stories. In the failure story the backer is refunded but the tip
-  stays with the creator, showing tips and pledges are separate.
-  Backer 1 now only pledges. No program change; `tip` already existed.
-- Live page: Supporter node between the backers with its own tip road; the
-  large badge card is replaced by a small ★ count (successful projects
+### 08:45 · Both backers tip, through a TIP junction on the map
+- Replaces the 08:25 "Supporter" wallet (owner's call): each backer tips the
+  creator 1 USDC, Backer 1 on "Pothole on Westheimer" and Backer 2 on "Fix
+  Local Park". Funding: backer1 11, backer2 6 USDC. `recycle` also empties
+  the old supporter wallet if it exists.
+- Live page: a TIP junction between the two vaults. Each backer has its own
+  tip road into TIP, and one road runs from TIP to the creator, so every
+  wallet's route to the creator is drawn. The coin travels the tipping
+  backer's road, then TIP to the creator. TIP shows the total tipped this
+  run. (On-chain a tip goes straight to the creator; TIP is a route marker,
+  not an account.)
+
+### 08:25 · Compact badge star
+- The large badge card is replaced by a small ★ count (successful projects
   that wallet backed) on the map and in the backer list, linking to the
   newest badge NFT on Explorer.
 - CLI writes the demo wallets' public addresses to `demo-wallets.json`
-  (git-ignored) so the page can be pointed at them.
-
-### 07:40 · Demo run with the owner's titles
-- Full Devnet run: "Pothole on Westheimer" succeeded (9.5 / 0.5 split,
-  badge minted), "Fix Local Park" failed and refunded. README reviewer links
-  now point to this run, so titles match everywhere.
+  (git-ignored).
 
 ### 07:45 · Live page: works within Devnet's rate limits
 - Fixed: on the public Devnet server the page showed "Reconnecting" with

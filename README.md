@@ -188,16 +188,16 @@ cargo run -p townfund-cli -- demo --seconds 20
 One command runs the Demo Day story against the live program and prints an
 Explorer link for every step:
 
-1. Creates (once) and funds four demo wallets in `~/.config/solana/townfund-demo/`
-   (creator, backer1, backer2, supporter) from your main wallet: SOL for fees,
-   USDC for pledges and tips. Their public addresses are written to
+1. Creates (once) and funds three demo wallets in `~/.config/solana/townfund-demo/`
+   (creator, backer1, backer2) from your main wallet: SOL for fees, USDC for
+   pledges and tips. Their public addresses are written to
    `demo-wallets.json` (git-ignored)
 2. **"Pothole on Westheimer"** (Creator-only) succeeds: Backer 1 pledges 10
-   USDC into escrow, the Supporter tips the creator 1 USDC, deadline passes,
-   settle 95/5, soulbound badge to Backer 1
-3. **"Fix Local Park"** (Community) fails: Backer 2 pledges 5 of 20 USDC, the
-   Supporter tips 1 USDC, deadline passes, settle marks it Failed, Backer 2 is
-   refunded 100%, and the tip stays with the creator (tips are not refundable)
+   USDC into escrow and tips the creator 1 USDC, deadline passes, settle 95/5,
+   soulbound badge to Backer 1
+3. **"Fix Local Park"** (Community) fails: Backer 2 pledges 5 of 20 USDC and
+   tips 1 USDC, deadline passes, settle marks it Failed, Backer 2 gets the 5
+   back, and the tip stays with the creator (tips are not refundable)
 
 Other commands: `setup-wallets`, `init-treasury`, `demo-success`, `demo-fail`,
 `status <project>`, `balances`, `recycle` (sends demo USDC back to your main

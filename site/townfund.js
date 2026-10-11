@@ -12,7 +12,6 @@ export const CONFIG = {
     creator: "6RU9N2BvzkkJQXQ2QgrGtGwkdfUN3beqvTAJxxL8Zcip",
     backer1: "GxZZ9JJtBPTmr9hioVwaHU43n3LxpUtGXMXK3vkDgAhS",
     backer2: "Ex6bzFJYnw2gz9zgvJg2Am4adXocxU2JkeKKUvTBEFUm",
-    supporter: "__SUPPORTER__",
   },
 };
 
@@ -191,7 +190,6 @@ export async function fetchState(cfg = CONFIG) {
     tokenAccountOf.get(w.backer1) || cfg.program,
     tokenAccountOf.get(w.backer2) || cfg.program,
     cfg.treasuryVault,
-    tokenAccountOf.get(w.supporter) || cfg.program,
     ...shown.map((p) => p.vault),
   ];
   const [multi, chainTime] = await rpcBatch(cfg.rpc, [
@@ -200,7 +198,7 @@ export async function fetchState(cfg = CONFIG) {
   ], true);
   if (multi == null) throw new Error("Devnet did not answer");
   const v = multi.value;
-  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[5 + i]); });
+  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[4 + i]); });
 
   // Soulbound badges each wallet holds, across every project (newest first).
   const createdAt = new Map(projects.map((p) => [p.address, p.createdAt]));
@@ -219,7 +217,6 @@ export async function fetchState(cfg = CONFIG) {
       backer1: amountOf(v[1]),
       backer2: amountOf(v[2]),
       treasury: amountOf(v[3]),
-      supporter: amountOf(v[4]),
     },
     badgesOf,
     success,
