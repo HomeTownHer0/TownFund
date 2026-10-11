@@ -20,3 +20,6 @@ keypairs/
 
 # Program dumps made in the repo root (fixtures live in tests/fixtures)
 /mpl_core.so
+
+# Demo wallets public addresses written by the CLI (not secret, but machine-specific)
+/demo-wallets.json

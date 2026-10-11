@@ -188,16 +188,20 @@ cargo run -p townfund-cli -- demo --seconds 20
 One command runs the Demo Day story against the live program and prints an
 Explorer link for every step:
 
-1. Creates (once) and funds three demo wallets in `~/.config/solana/townfund-demo/`
-   (creator, backer1, backer2) from your main wallet: SOL for fees, USDC for pledges
-2. **"Pothole on Westheimer"** (Creator-only) succeeds: pledge 10 USDC into
-   escrow, tip 1 USDC, deadline passes, settle 95/5, soulbound badge to the backer
-3. **"Fix Local Park"** (Community) fails: pledge 5 of 20 USDC, deadline
-   passes, settle marks it Failed, backer refunded 100%
+1. Creates (once) and funds four demo wallets in `~/.config/solana/townfund-demo/`
+   (creator, backer1, backer2, supporter) from your main wallet: SOL for fees,
+   USDC for pledges and tips. Their public addresses are written to
+   `demo-wallets.json` (git-ignored)
+2. **"Pothole on Westheimer"** (Creator-only) succeeds: Backer 1 pledges 10
+   USDC into escrow, the Supporter tips the creator 1 USDC, deadline passes,
+   settle 95/5, soulbound badge to Backer 1
+3. **"Fix Local Park"** (Community) fails: Backer 2 pledges 5 of 20 USDC, the
+   Supporter tips 1 USDC, deadline passes, settle marks it Failed, Backer 2 is
+   refunded 100%, and the tip stays with the creator (tips are not refundable)
 
 Other commands: `setup-wallets`, `init-treasury`, `demo-success`, `demo-fail`,
 `status <project>`, `balances`, `recycle` (sends demo USDC back to your main
-wallet for another rehearsal). The first run needs ~16 USDC in the main wallet;
+wallet for another rehearsal). The first run needs ~17 USDC in the main wallet;
 after `recycle`, each run only uses up the 0.5 USDC treasury fee.
 
 ## Backer badge

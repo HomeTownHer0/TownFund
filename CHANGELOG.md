@@ -9,6 +9,18 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 08:25 · Supporter (tipper) and compact badge star
+- New demo wallet **Supporter**: only tips. It tips the creator 1 USDC in
+  both stories. In the failure story the backer is refunded but the tip
+  stays with the creator, showing tips and pledges are separate.
+  Backer 1 now only pledges. No program change; `tip` already existed.
+- Live page: Supporter node between the backers with its own tip road; the
+  large badge card is replaced by a small ★ count (successful projects
+  that wallet backed) on the map and in the backer list, linking to the
+  newest badge NFT on Explorer.
+- CLI writes the demo wallets' public addresses to `demo-wallets.json`
+  (git-ignored) so the page can be pointed at them.
+
 ### 07:40 · Demo run with the owner's titles
 - Full Devnet run: "Pothole on Westheimer" succeeded (9.5 / 0.5 split,
   badge minted), "Fix Local Park" failed and refunded. README reviewer links

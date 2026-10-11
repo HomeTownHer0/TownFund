@@ -12,6 +12,7 @@ export const CONFIG = {
     creator: "6RU9N2BvzkkJQXQ2QgrGtGwkdfUN3beqvTAJxxL8Zcip",
     backer1: "GxZZ9JJtBPTmr9hioVwaHU43n3LxpUtGXMXK3vkDgAhS",
     backer2: "Ex6bzFJYnw2gz9zgvJg2Am4adXocxU2JkeKKUvTBEFUm",
+    supporter: "__SUPPORTER__",
   },
 };
 
@@ -139,7 +140,7 @@ const DISC_BYTES = {
 const tokenAccountOf = new Map();
 async function resolveTokenAccounts(cfg) {
   for (const owner of Object.values(cfg.wallets)) {
-    if (tokenAccountOf.get(owner)) continue;
+    if (!owner || owner.startsWith("__") || tokenAccountOf.get(owner)) continue;
     const [r] = await rpcBatch(cfg.rpc, [["getTokenAccountsByOwner", [owner, { mint: cfg.usdcMint }, { encoding: "base64", commitment: "confirmed" }]]]);
     const found = r?.value?.[0]?.pubkey;
     if (found) tokenAccountOf.set(owner, found);
@@ -190,6 +191,7 @@ export async function fetchState(cfg = CONFIG) {
     tokenAccountOf.get(w.backer1) || cfg.program,
     tokenAccountOf.get(w.backer2) || cfg.program,
     cfg.treasuryVault,
+    tokenAccountOf.get(w.supporter) || cfg.program,
     ...shown.map((p) => p.vault),
   ];
   const [multi, chainTime] = await rpcBatch(cfg.rpc, [
@@ -198,7 +200,16 @@ export async function fetchState(cfg = CONFIG) {
   ], true);
   if (multi == null) throw new Error("Devnet did not answer");
   const v = multi.value;
-  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[4 + i]); });
+  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[5 + i]); });
+
+  // Soulbound badges each wallet holds, across every project (newest first).
+  const createdAt = new Map(projects.map((p) => [p.address, p.createdAt]));
+  const badgesOf = {};
+  for (const [name, addr] of Object.entries(w)) {
+    badgesOf[name] = badges
+      .filter((b) => b.backer === addr)
+      .sort((a, b) => (createdAt.get(b.project) || 0) - (createdAt.get(a.project) || 0));
+  }
 
   return {
     fetchedAt: Date.now(),
@@ -208,7 +219,9 @@ export async function fetchState(cfg = CONFIG) {
       backer1: amountOf(v[1]),
       backer2: amountOf(v[2]),
       treasury: amountOf(v[3]),
+      supporter: amountOf(v[4]),
     },
+    badgesOf,
     success,
     community,
     projectCount: mine.length,

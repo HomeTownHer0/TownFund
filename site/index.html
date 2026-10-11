@@ -120,15 +120,11 @@
   .backers { margin: 14px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--asphalt-3); }
   .backers li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--asphalt-3); }
   .backers .muted { color: var(--curb); }
-  .badge {
-    margin-top: 16px; display: flex; gap: 14px; align-items: center; text-decoration: none; color: #fff;
-    background: linear-gradient(135deg, #1b4d33, #0e6b3e); border-radius: 12px; padding: 14px 16px;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,.6);
-  }
-  .badge .seal { width: 54px; height: 54px; flex: none; border-radius: 50%; background: var(--amber); color: #2a2100; display: grid; place-items: center; font-weight: 800; font-size: 26px; box-shadow: 0 0 0 4px rgba(242,169,0,.25); }
-  .badge strong { display: block; font-size: 18px; }
-  .badge:hover strong { text-decoration: underline; text-decoration-color: var(--amber); }
-  .badge small { color: rgba(255,255,255,.8); font-size: 14px; }
+  a.star { color: var(--amber); font-weight: 800; text-decoration: none; margin-left: 8px; white-space: nowrap; }
+  a.star:hover { text-decoration: underline; }
+  .star-svg text { fill: var(--amber); font-weight: 800; font-size: 17px; }
+  .star-svg:hover text { text-decoration: underline; }
+  .node.supporter rect.plate { fill: #4a2c55; stroke: #fff; }
   .empty { color: var(--curb); }
 
   /* ---------- lower row ---------- */
@@ -173,14 +169,14 @@
   </header>
 
   <section class="map" aria-label="Where the money is right now">
-    <svg id="map" viewBox="0 0 1200 545" role="img" aria-labelledby="map-title">
-      <title id="map-title">Money flow: backers pledge into project vaults; vaults pay the creator and the treasury, or refund the backer.</title>
+    <svg id="map" viewBox="0 36 1200 509" role="img" aria-labelledby="map-title">
+      <title id="map-title">Money flow: backers pledge into project vaults; a supporter tips the creator directly; vaults pay the creator and the treasury, or refund the backer.</title>
       <defs>
         <path id="p-b1-v1" d="M 250 135 C 330 135, 360 135, 445 135"/>
         <path id="p-b2-v2" d="M 250 385 C 330 385, 360 385, 445 385"/>
         <path id="p-v1-cr" d="M 755 120 C 830 120, 860 100, 945 100"/>
         <path id="p-v1-tr" d="M 755 150 C 840 150, 850 300, 945 300"/>
-        <path id="p-b1-cr" d="M 140 75 C 140 20, 1050 10, 1050 50"/>
+        <path id="p-sup-cr" d="M 250 260 C 560 260, 800 262, 880 222 S 975 185, 1000 170"/>
         <path id="p-v2-b2" d="M 600 445 C 600 510, 140 510, 140 445"/>
       </defs>
       <!-- roads -->
@@ -189,13 +185,13 @@
         <use href="#p-b2-v2" class="road"/><use href="#p-b2-v2" class="lane"/>
         <use href="#p-v1-cr" class="road"/><use href="#p-v1-cr" class="lane"/>
         <use href="#p-v1-tr" class="road"/><use href="#p-v1-tr" class="lane"/>
-        <use href="#p-b1-cr" class="road" style="stroke-width:8"/><use href="#p-b1-cr" class="lane"/>
+        <use href="#p-sup-cr" class="road" style="stroke-width:8"/><use href="#p-sup-cr" class="lane"/>
         <use href="#p-v2-b2" class="road" style="stroke-width:8"/><use href="#p-v2-b2" class="lane"/>
         <text class="road-label" x="350" y="122" text-anchor="middle">pledge</text>
         <text class="road-label" x="350" y="372" text-anchor="middle">pledge</text>
         <text class="road-label" x="850" y="92" text-anchor="middle">95% payout</text>
-        <text class="road-label" x="900" y="235" text-anchor="middle">5% fee</text>
-        <text class="road-label" x="600" y="14" text-anchor="middle">tip, straight to the creator</text>
+        <text class="road-label" x="905" y="192" text-anchor="middle">5% fee</text>
+        <text class="road-label" x="520" y="250" text-anchor="middle">tip, straight to the creator</text>
         <text class="road-label" x="370" y="536" text-anchor="middle">refund if the target is missed</text>
       </g>
 
@@ -205,12 +201,20 @@
         <text class="n-name" x="18" y="34">Backer 1</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
         <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
+        <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
       <g class="node" id="n-backer2" transform="translate(30,325)">
         <rect class="plate" width="220" height="120" rx="12"/>
         <text class="n-name" x="18" y="34">Backer 2</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
         <text class="chip" x="202" y="34" text-anchor="end" data-chip></text>
+        <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
+      </g>
+      <g class="node supporter" id="n-supporter" transform="translate(30,212)">
+        <rect class="plate" width="220" height="96" rx="12"/>
+        <text class="n-name" x="18" y="30">Supporter</text>
+        <text class="n-val" x="18" y="70" data-val style="font-size:28px">–</text><text class="n-unit" x="18" y="88">USDC, tips only</text>
+        <text class="chip" x="202" y="30" text-anchor="end" data-chip></text>
       </g>
       <g class="node vault" id="n-vault1" transform="translate(445,60)">
         <rect class="plate" width="310" height="150" rx="12"/>
@@ -248,6 +252,7 @@
       <span class="lg-green">Wallet, or a project that paid out</span>
       <span class="lg-amber">Money held in escrow</span>
       <span class="lg-red">Project missed its target</span>
+      <span>★ = soulbound badges: successful projects that wallet backed</span>
       <span id="since">Green and red numbers show the change since this run started.</span>
     </div>
   </section>
@@ -282,7 +287,7 @@ import { CONFIG, fetchState, fetchActivity, fetchLatestSignature, RateLimited, u
 const q = new URLSearchParams(location.search);
 const cfg = structuredClone(CONFIG);
 if (q.get("rpc")) cfg.rpc = q.get("rpc");
-for (const k of ["creator", "backer1", "backer2"]) if (q.get(k)) cfg.wallets[k] = q.get(k);
+for (const k of ["creator", "backer1", "backer2", "supporter"]) if (q.get(k)) cfg.wallets[k] = q.get(k);
 const custom = cfg.rpc !== CONFIG.rpc;
 const explorer = (kind, id) => `https://explorer.solana.com/${kind}/${id}?` +
   (custom ? `cluster=custom&customUrl=${encodeURIComponent(cfg.rpc)}` : "cluster=devnet");
@@ -312,6 +317,26 @@ function setChip(node, delta) {
   if (!delta) { c.textContent = ""; return; }
   c.textContent = (delta > 0 ? "+" : "−") + usdc(Math.abs(delta));
   c.setAttribute("class", "chip " + (delta > 0 ? "up" : "down"));
+}
+
+// ---- soulbound badge star: count of successful projects backed
+function starInfo(list) {
+  const n = list.length;
+  return { n, href: n ? explorer("address", list[0].asset) : "",
+    title: `${n} soulbound badge${n === 1 ? "" : "s"}: ${n} successful project${n === 1 ? "" : "s"} backed. Opens the newest on Explorer.` };
+}
+function setStar(node, list) {
+  const a = $("[data-star]", node), { n, href, title } = starInfo(list);
+  a.style.display = n ? "" : "none";
+  if (!n) return;
+  a.setAttribute("href", href);
+  $("title", a).textContent = title;
+  $("text", a).textContent = `★ ${n}`;
+}
+function starLink(addr, st) {
+  const key = Object.entries(cfg.wallets).find(([, v]) => v === addr)?.[0];
+  const { n, href, title } = starInfo((key && st.badgesOf?.[key]) || []);
+  return n ? `<a class="star" href="${href}" target="_blank" rel="noopener" title="${esc(title)}" aria-label="${esc(title)}">★ ${n}</a>` : "";
 }
 
 // ---- coins moving along a road
@@ -365,11 +390,13 @@ function render(st) {
       : "Green and red numbers show the change since you opened this page.";
   }
 
-  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-creator", "creator"], ["n-treasury", "treasury"]]) {
+  for (const [id, key] of [["n-backer1", "backer1"], ["n-backer2", "backer2"], ["n-supporter", "supporter"], ["n-creator", "creator"], ["n-treasury", "treasury"]]) {
     const n = document.getElementById(id);
     setVal(n, b[key]);
     setChip(n, b[key] - baseline[key]);
   }
+  setStar(document.getElementById("n-backer1"), st.badgesOf?.backer1 || []);
+  setStar(document.getElementById("n-backer2"), st.badgesOf?.backer2 || []);
   vaultNode("n-vault1", st.success);
   vaultNode("n-vault2", st.community);
 
@@ -382,7 +409,7 @@ function render(st) {
     const v2 = vd(st.community, prev.community);
     if (v1 > 0) coin("p-b1-v1", v1);
     if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 250); }
-    if (v1 === 0 && d("creator") > 0 && d("backer1") < 0) coin("p-b1-cr", d("creator"));
+    if (d("supporter") < 0 && d("creator") > 0) coin("p-sup-cr", -d("supporter"));
     if (v2 > 0) coin("p-b2-v2", v2);
     if (v2 < 0) coin("p-v2-b2", -v2);
   }
@@ -425,15 +452,8 @@ function renderProject(el, p, st) {
 
   const pct = Math.min(100, (p.status === "Succeeded" ? p.target : p.totalPledged) / p.target * 100);
   const backers = p.pledges.length
-    ? p.pledges.map((pl) => `<li><span>${esc(label(pl.backer))}${pl.vote != null ? ` <span class="muted">voted for contractor #${pl.vote}</span>` : ""}</span><span>${usdc(pl.amount)} USDC</span></li>`).join("")
+    ? p.pledges.map((pl) => `<li><span>${esc(label(pl.backer))}${starLink(pl.backer, st)}${pl.vote != null ? ` <span class="muted">voted for contractor #${pl.vote}</span>` : ""}</span><span>${usdc(pl.amount)} USDC</span></li>`).join("")
     : `<li><span class="muted">${p.status === "Failed" || p.status === "Cancelled" ? "All pledges refunded" : "No pledges yet"}</span><span></span></li>`;
-  const badge = p.badges.map((bg) => `
-    <a class="badge" href="${explorer("address", bg.asset)}">
-      <div class="seal" aria-hidden="true">★</div>
-      <div><strong>TownFund Backer: ${esc(p.title)}</strong>
-      <small>Soulbound NFT held by ${esc(label(bg.backer))}. It can never be transferred or sold.</small></div>
-    </a>`).join("");
-
   el.innerHTML = `
     <h2>${esc(p.title)}<span class="status ${p.status}">${p.status}</span></h2>
     <p class="kind">${p.kind === "Creator" ? "Individual project: the creator is paid on success" : `Community project: backers elect one of ${p.candidates.length} contractors`}</p>
@@ -442,12 +462,11 @@ function renderProject(el, p, st) {
     <div class="progress-label"><span>${usdc(p.status === "Succeeded" ? p.target : p.totalPledged)} of ${usdc(p.target)} USDC pledged</span><span>${p.backerCount} backer${p.backerCount === 1 ? "" : "s"}</span></div>
     <ol class="steps">${steps(p, now)}</ol>
     <ul class="backers">${backers}</ul>
-    ${badge}
     <p style="margin:12px 0 0;font-size:14px"><a href="${explorer("address", p.address)}">Project record on Explorer</a>&nbsp;&nbsp;&nbsp;<a href="${explorer("address", p.vault)}">Vault on Explorer</a></p>`;
 }
 
 function label(addr) {
-  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { creator: "Creator", backer1: "Backer 1", backer2: "Backer 2" }[k];
+  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { creator: "Creator", backer1: "Backer 1", backer2: "Backer 2", supporter: "Supporter" }[k];
   return short(addr);
 }
 
@@ -456,6 +475,7 @@ function renderAccounts(st) {
     ["Creator", cfg.wallets.creator, st.balances.creator],
     ["Backer 1", cfg.wallets.backer1, st.balances.backer1],
     ["Backer 2", cfg.wallets.backer2, st.balances.backer2],
+    ["Supporter (tips only)", cfg.wallets.supporter, st.balances.supporter],
     ["Town treasury vault", cfg.treasuryVault, st.balances.treasury],
   ];
   if (st.success) rows.push([`Vault: ${st.success.title}`, st.success.vault, st.success.vaultBalance]);
@@ -480,7 +500,7 @@ const txCache = new Map();
 const seen = new Set();
 async function refreshFeed() {
   if (!last) return true;
-  const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.treasury]: "Treasury" };
+  const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.wallets.supporter]: "Supporter", [cfg.treasury]: "Treasury" };
   if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
   const items = await fetchActivity(txCache, labels, cfg, 12);
