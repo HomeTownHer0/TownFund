@@ -46,6 +46,15 @@
     box-shadow: inset 0 0 0 3px var(--sign), inset 0 0 0 5px #fff;
   }
   .brand p { margin: 0; color: var(--curb); }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .runner { display: flex; align-items: center; gap: 10px; }
+  .runner[hidden] { display: none; }
+  #run-btn {
+    font: inherit; font-weight: 800; font-size: 18px; padding: 8px 20px; border-radius: 10px; cursor: pointer;
+    background: var(--amber); color: #2a2100; border: 0; box-shadow: 0 0 0 3px rgba(242,169,0,.25);
+  }
+  #run-btn:disabled { cursor: default; background: var(--asphalt-3); color: var(--curb); box-shadow: none; }
+  #runner-text { color: var(--curb); font-size: 14px; max-width: 360px; }
   .live { display: flex; align-items: center; gap: 8px; color: var(--curb); font-size: 15px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--curb); }
   .live.ok .dot { background: #3ccf7d; box-shadow: 0 0 0 4px rgba(60,207,125,.18); }
@@ -168,7 +177,13 @@
       <h1>TownFund</h1>
       <p>Community fundraising on Solana. Live from Devnet, with test USDC.</p>
     </div>
-    <div class="live" id="live" role="status"><span class="dot"></span><span id="live-text">Connecting to Devnet…</span></div>
+    <div class="right">
+      <div class="runner" id="runner" hidden>
+        <button type="button" id="run-btn" disabled>Run demo</button>
+        <span id="runner-text"></span>
+      </div>
+      <div class="live" id="live" role="status"><span class="dot"></span><span id="live-text">Connecting to Devnet…</span></div>
+    </div>
   </header>
 
   <section class="map" aria-label="Where the money is right now">
@@ -343,7 +358,8 @@ function starLink(addr, st) {
   return n ? `<a class="star" href="${href}" target="_blank" rel="noopener" title="${esc(title)}" aria-label="${esc(title)}">★ ${n}</a>` : "";
 }
 
-// ---- coins moving along a road
+// ---- coins moving along a road (slow enough to follow on a projector)
+const COIN_MS = 2600;
 function coin(pathId, amount) {
   if (reduceMotion || document.hidden) return;
   const path = document.getElementById(pathId);
@@ -352,7 +368,7 @@ function coin(pathId, amount) {
   g.setAttribute("class", "coin");
   g.innerHTML = `<circle r="11"/><text x="16" y="-12">${amount > 0 ? usdc(amount) : ""}</text>`;
   $("#coins").appendChild(g);
-  const t0 = performance.now(), dur = 1600;
+  const t0 = performance.now(), dur = COIN_MS;
   const step = (t) => {
     const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     const p = path.getPointAtLength(e * len);
@@ -398,7 +414,7 @@ function render(st) {
     const v1 = vd(st.success, prev.success);
     const v2 = vd(st.community, prev.community);
     if (v1 > 0) coin("p-b1-v1", v1);
-    if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 250); }
+    if (v1 < 0) { coin("p-v1-cr", -v1 - d("treasury")); setTimeout(() => coin("p-v1-tr", d("treasury")), 500); }
     // Tips: a creator's gain that isn't the 95% payout. The backer whose
     // balance dropped by more than it pledged is the tipper. The coin goes
     // backer -> TIP -> that project's creator.
@@ -409,7 +425,8 @@ function render(st) {
       const tipCoin = (amount, out) => {
         if (amount <= 0) return;
         const road = drop1 >= amount ? "p-b1-tip" : drop2 >= amount ? "p-b2-tip" : null;
-        if (road) { coin(road, amount); setTimeout(() => coin(out, amount), 900); }
+        // second leg (TIP -> creator) starts as the first one arrives
+        if (road) { coin(road, amount); setTimeout(() => coin(out, amount), COIN_MS - 300); }
       };
       tipCoin(d("creator") - payout, "p-tip-cr");
       tipCoin(d("creator2"), "p-tip-cr2");
@@ -505,6 +522,7 @@ setInterval(() => {
 const txCache = new Map();
 let tipRun = { start: null, max: 0 };
 let pageOpenedAt = null; // chain time (unix seconds) when this page first loaded data
+let resetAt = 0; // chain time when both creators were last seen empty (after a reset)
 const seen = new Set();
 async function refreshFeed() {
   if (!last) return true;
@@ -516,8 +534,9 @@ async function refreshFeed() {
   const items = await fetchActivity(txCache, labels, cfg, 12);
   // TIP box. Count tips made after the page was opened AND in the current run
   // (a run starts when its Individual project opens). So TIP reads 0 as
-  // soon as the page loads, and drops back to 0 when a new run starts.
-  const runStart = Math.max(pageOpenedAt ?? Infinity, (last.success || last.community)?.createdAt ?? 0);
+  // soon as the page loads, and drops back to 0 when a new run starts or
+  // the demo is reset (both creators emptied).
+  const runStart = Math.max(pageOpenedAt ?? Infinity, (last.success || last.community)?.createdAt ?? 0, resetAt);
   const tipped = items
     .filter((a) => a.name === "Tip" && a.ok && a.time >= runStart)
     .reduce((sum, a) => sum + (a.moves.find((m) => (m.who === "Creator 1" || m.who === "Creator 2") && m.amount > 0)?.amount || 0), 0);
@@ -565,6 +584,11 @@ async function tick() {
       const st = await fetchState(cfg);
       if (st.chainTime) chainOffset = st.chainTime - st.fetchedAt / 1000;
       if (pageOpenedAt == null && st.chainTime) pageOpenedAt = st.chainTime;
+      // After a reset both creators hold 0: earlier tips belong to the old run.
+      if (st.chainTime && !st.balances.creator && !st.balances.creator2 && st.chainTime > resetAt) {
+        resetAt = st.chainTime;
+        if (tipRun.max > 0) feedPending = true;
+      }
       last = st;
       lastFull = Date.now();
       render(st);
@@ -591,6 +615,41 @@ async function tick() {
   setTimeout(tick, document.hidden ? Math.max(wait, 10000) : wait);
 }
 tick();
+
+// ---- presenter: "Run demo" button (only with ?presenter in the address)
+// It calls the runner on THIS computer (`townfund serve`), which signs with
+// the keys on this computer. Visitors without ?presenter never see it.
+if (q.has("presenter")) {
+  const RUNNER = q.get("runner") || "http://127.0.0.1:8787";
+  const box = $("#runner"), btn = $("#run-btn"), note = $("#runner-text");
+  box.hidden = false;
+  const label = { running: "Running…", resetting: "Resetting…" };
+  let prevState = "idle";
+  async function pollRunner() {
+    try {
+      const r = await fetch(RUNNER + "/status", { cache: "no-store" });
+      const j = await r.json();
+      // The reset moves USDC with plain token transfers (not TownFund
+      // transactions), so reload the boxes as soon as it finishes.
+      if (j.state === "idle" && prevState !== "idle") lastFull = 0;
+      prevState = j.state;
+      btn.disabled = j.state !== "idle";
+      btn.textContent = label[j.state] || "Run demo";
+      note.textContent = j.error ? `Last run stopped: ${j.error.slice(0, 120)}` : "";
+    } catch {
+      btn.disabled = true;
+      btn.textContent = "Run demo";
+      note.textContent = "Runner not found. In Terminal: cargo run -p townfund-cli -- serve";
+    }
+    setTimeout(pollRunner, 2000);
+  }
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.textContent = "Starting…";
+    try { await fetch(RUNNER + "/run", { method: "POST" }); } catch { /* next poll shows the problem */ }
+  });
+  pollRunner();
+}
 </script>
 </body>
 </html>

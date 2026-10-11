@@ -28,8 +28,8 @@ use solana_rpc_client::rpc_client::RpcClient;
 use solana_signer::Signer;
 use solana_transaction::Transaction;
 use townfund::{
-    Project, ProjectKind, BADGE_AUTHORITY_SEED, BADGE_SEED, PLEDGE_SEED,
-    PROJECT_SEED, TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED,
+    Project, ProjectKind, BADGE_AUTHORITY_SEED, BADGE_SEED, PLEDGE_SEED, PROJECT_SEED,
+    TREASURY_SEED, TREASURY_VAULT_SEED, USDC_MINT, VAULT_SEED,
 };
 
 const USDC: u64 = 1_000_000;
@@ -59,6 +59,20 @@ enum Cmd {
         /// Project length in seconds (demo build accepts 10-600)
         #[arg(long, default_value_t = 20)]
         seconds: i64,
+        /// After the demo, hold the result this many seconds, then reset
+        /// (creators to 0, backers refilled). 0 = don't reset.
+        #[arg(long, default_value_t = 15)]
+        reset_after: u64,
+    },
+    /// Run a small local server so the live page's "Run demo" button can
+    /// start the demo on this computer. Listens on 127.0.0.1 only.
+    Serve {
+        #[arg(long, default_value_t = 8787)]
+        port: u16,
+        #[arg(long, default_value_t = 20)]
+        seconds: i64,
+        #[arg(long, default_value_t = 15)]
+        reset_after: u64,
     },
     /// Create (once) and fund the creator / creator2 / backer1 / backer2 wallets
     SetupWallets,
@@ -82,6 +96,9 @@ enum Cmd {
     Balances,
     /// Send the demo wallets' USDC back to your main wallet (for reruns)
     Recycle,
+    /// Reset for a new run: creators back to 0, backers refilled to
+    /// pledge + tip (Backer 1: 11 USDC, Backer 2: 6 USDC)
+    Reset,
 }
 
 // ===================================================================== app
@@ -229,7 +246,11 @@ fn usdc_transfer_ix(from_owner: &Pubkey, to_owner: &Pubkey, amount: u64) -> Inst
 // ================================================ TownFund instructions
 
 fn ix(data: Vec<u8>, accounts: Vec<AccountMeta>) -> Instruction {
-    Instruction { program_id: townfund::id(), accounts, data }
+    Instruction {
+        program_id: townfund::id(),
+        accounts,
+        data,
+    }
 }
 
 fn init_treasury_ix(payer: &Pubkey) -> Instruction {
@@ -373,7 +394,8 @@ fn expand(path: &str) -> PathBuf {
 }
 
 fn read_keypair(path: &Path) -> Result<Keypair> {
-    let text = fs::read_to_string(path).with_context(|| format!("can't read {}", path.display()))?;
+    let text =
+        fs::read_to_string(path).with_context(|| format!("can't read {}", path.display()))?;
     let bytes: Vec<u8> = serde_json::from_str(&text)?;
     Keypair::try_from(bytes.as_slice()).map_err(|e| anyhow!("bad keypair {}: {e}", path.display()))
 }
@@ -439,7 +461,10 @@ fn write_public_addresses(w: &Wallets) {
         "backer2": w.backer2.pubkey().to_string(),
     });
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../demo-wallets.json");
-    let _ = fs::write(path, serde_json::to_string_pretty(&json).unwrap_or_default() + "\n");
+    let _ = fs::write(
+        path,
+        serde_json::to_string_pretty(&json).unwrap_or_default() + "\n",
+    );
 }
 
 fn fmt_usdc(base: u64) -> String {
@@ -447,7 +472,10 @@ fn fmt_usdc(base: u64) -> String {
     if frac == 0 {
         format!("{whole} USDC")
     } else {
-        format!("{whole}.{} USDC", format!("{frac:06}").trim_end_matches('0'))
+        format!(
+            "{whole}.{} USDC",
+            format!("{frac:06}").trim_end_matches('0')
+        )
     }
 }
 
@@ -462,7 +490,12 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
     let w = wallets()?;
     let main = app.main.pubkey();
     // Each backer pledges and tips 1 USDC: backer1 10 + 1, backer2 5 + 1.
-    let want = [(&w.creator, 0u64), (&w.creator2, 0), (&w.backer1, 11 * USDC), (&w.backer2, 6 * USDC)];
+    let want = [
+        (&w.creator, 0u64),
+        (&w.creator2, 0),
+        (&w.backer1, 11 * USDC),
+        (&w.backer2, 6 * USDC),
+    ];
 
     let mut ixs = vec![];
     let mut usdc_needed = 0;
@@ -488,10 +521,24 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
             main
         );
     }
-    app.send("Fund demo wallets (SOL for fees, USDC for pledges and tips)", &ixs, &[&app.main])?;
+    let needs_funding = usdc_needed > 0 || ixs.iter().any(|ix| ix.program_id == SYSTEM_PROGRAM);
+    let missing_accounts = want.iter().any(|(k, _)| !app.exists(&ata(&k.pubkey())));
+    if needs_funding || missing_accounts {
+        app.send(
+            "Fund demo wallets (SOL for fees, USDC for pledges and tips)",
+            &ixs,
+            &[&app.main],
+        )?;
+    } else {
+        println!("  ✅ already loaded: backers have pledge + tip ready");
+    }
     for (name, k) in w.named() {
         let who = k.pubkey();
-        println!("  {name:8} {who}  {} | {}", fmt_sol(app.sol(&who)), fmt_usdc(app.usdc(&who)));
+        println!(
+            "  {name:8} {who}  {} | {}",
+            fmt_sol(app.sol(&who)),
+            fmt_usdc(app.usdc(&who))
+        );
     }
     Ok(w)
 }
@@ -502,11 +549,18 @@ fn init_treasury(app: &App) -> Result<()> {
         println!("  ✅ already exists: {}", treasury_address());
         return Ok(());
     }
-    app.send("Create TownFund treasury", &[init_treasury_ix(&app.main.pubkey())], &[&app.main])
+    app.send(
+        "Create TownFund treasury",
+        &[init_treasury_ix(&app.main.pubkey())],
+        &[&app.main],
+    )
 }
 
 fn new_project_id() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
 }
 
 /// Wait for the on-chain clock to pass the deadline, with a countdown.
@@ -538,21 +592,49 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 
     app.send(
         &format!("Creator 1 opens \"{title}\": target 10 USDC, {seconds}s"),
-        &[create_project_ix(&creator, id, ProjectKind::Creator, 10 * USDC, seconds, title, vec![])],
+        &[create_project_ix(
+            &creator,
+            id,
+            ProjectKind::Creator,
+            10 * USDC,
+            seconds,
+            title,
+            vec![],
+        )],
         &[&w.creator],
     )?;
-    println!("     project: {}", app.link("address", &project.to_string()));
+    println!(
+        "     project: {}",
+        app.link("address", &project.to_string())
+    );
     let deadline = app.project(&project)?.deadline;
 
-    app.send("Backer1 pledges 10 USDC → vault (escrow)", &[pledge_ix(&backer, &project, 10 * USDC, None)], &[&w.backer1])?;
+    app.send(
+        "Backer1 pledges 10 USDC → vault (escrow)",
+        &[pledge_ix(&backer, &project, 10 * USDC, None)],
+        &[&w.backer1],
+    )?;
     let vault = vault_address(&project);
-    println!("     vault now holds {}: {}", fmt_usdc(app.usdc_at(&vault)), app.link("address", &vault.to_string()));
-    app.send("Backer1 tips Creator 1 1 USDC (direct, no fee)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer1])?;
+    println!(
+        "     vault now holds {}: {}",
+        fmt_usdc(app.usdc_at(&vault)),
+        app.link("address", &vault.to_string())
+    );
+    app.send(
+        "Backer1 tips Creator 1 1 USDC (direct, no fee)",
+        &[tip_ix(&backer, &project, &creator, USDC)],
+        &[&w.backer1],
+    )?;
 
     wait_for_deadline(app, deadline)?;
     let creator_before = app.usdc(&creator);
     let treasury_before = app.usdc_at(&treasury_vault_address());
-    settle_retrying(app, &project, Some(&creator), "Settle: 95% → Creator 1, 5% → treasury")?;
+    settle_retrying(
+        app,
+        &project,
+        Some(&creator),
+        "Settle: 95% → Creator 1, 5% → treasury",
+    )?;
     println!(
         "     Creator 1 +{} | treasury +{} | vault now {}",
         fmt_usdc(app.usdc(&creator) - creator_before),
@@ -563,10 +645,18 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let asset = Keypair::new();
     app.send(
         "Mint soulbound backer badge → backer1",
-        &[badge_ix(&app.main.pubkey(), &project, &backer, &asset.pubkey())],
+        &[badge_ix(
+            &app.main.pubkey(),
+            &project,
+            &backer,
+            &asset.pubkey(),
+        )],
         &[&app.main, &asset],
     )?;
-    println!("     badge NFT: {}", app.link("address", &asset.pubkey().to_string()));
+    println!(
+        "     badge NFT: {}",
+        app.link("address", &asset.pubkey().to_string())
+    );
     let p = app.project(&project)?;
     println!("  🎉 status: {:?}", p.status);
     Ok(())
@@ -583,10 +673,21 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 
     app.send(
         &format!("Creator 2 opens \"{title}\": target 20 USDC, 2 contractors, {seconds}s"),
-        &[create_project_ix(&creator, id, ProjectKind::Community, 20 * USDC, seconds, title, candidates)],
+        &[create_project_ix(
+            &creator,
+            id,
+            ProjectKind::Community,
+            20 * USDC,
+            seconds,
+            title,
+            candidates,
+        )],
         &[&w.creator2],
     )?;
-    println!("     project: {}", app.link("address", &project.to_string()));
+    println!(
+        "     project: {}",
+        app.link("address", &project.to_string())
+    );
     let deadline = app.project(&project)?.deadline;
 
     let before = app.usdc(&backer);
@@ -595,12 +696,24 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
         &[pledge_ix(&backer, &project, 5 * USDC, Some(0))],
         &[&w.backer2],
     )?;
-    println!("     backer2: {} → {}", fmt_usdc(before), fmt_usdc(app.usdc(&backer)));
-    app.send("Backer2 tips Creator 2 1 USDC (tips are not refundable)", &[tip_ix(&backer, &project, &creator, USDC)], &[&w.backer2])?;
+    println!(
+        "     backer2: {} → {}",
+        fmt_usdc(before),
+        fmt_usdc(app.usdc(&backer))
+    );
+    app.send(
+        "Backer2 tips Creator 2 1 USDC (tips are not refundable)",
+        &[tip_ix(&backer, &project, &creator, USDC)],
+        &[&w.backer2],
+    )?;
 
     wait_for_deadline(app, deadline)?;
     settle_retrying(app, &project, None, "Settle: 5 of 20 USDC → project FAILED")?;
-    app.send("Backer2 claims refund (100%, no fee)", &[refund_ix(&backer, &project)], &[&w.backer2])?;
+    app.send(
+        "Backer2 claims refund (100%, no fee)",
+        &[refund_ix(&backer, &project)],
+        &[&w.backer2],
+    )?;
     println!("     backer2 got the 5 USDC pledge back; the 1 USDC tip stays with Creator 2");
     let p = app.project(&project)?;
     println!("  ↩️  status: {:?}", p.status);
@@ -611,9 +724,14 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 /// the program says the deadline hasn't been reached yet.
 fn settle_retrying(app: &App, project: &Pubkey, payee: Option<&Pubkey>, label: &str) -> Result<()> {
     for attempt in 1..=10 {
-        match app.send(label, &[settle_ix(&app.main.pubkey(), project, payee)], &[&app.main]) {
+        match app.send(
+            label,
+            &[settle_ix(&app.main.pubkey(), project, payee)],
+            &[&app.main],
+        ) {
             Ok(()) => return Ok(()),
-            Err(e) if attempt < 10 && is_deadline_not_reached(&e) => {
+            // Retrying is safe: the program refuses a second settle.
+            Err(e) if attempt < 10 && (is_deadline_not_reached(&e) || is_network_hiccup(&e)) => {
                 sleep(Duration::from_secs(2));
             }
             Err(e) => return Err(e),
@@ -628,6 +746,12 @@ fn is_deadline_not_reached(e: &anyhow::Error) -> bool {
     text.contains("DeadlineNotReached") || text.contains("0x1780")
 }
 
+/// The request never reached the server (connection dropped, timeout).
+fn is_network_hiccup(e: &anyhow::Error) -> bool {
+    let text = format!("{e:?}");
+    text.contains("error sending request") || text.contains("timed out") || text.contains("429")
+}
+
 fn status(app: &App, address: &Pubkey) -> Result<()> {
     let p = app.project(address)?;
     println!("Project   {address}");
@@ -636,8 +760,16 @@ fn status(app: &App, address: &Pubkey) -> Result<()> {
     println!("  status   {:?}", p.status);
     println!("  creator  {}", p.creator);
     println!("  target   {}", fmt_usdc(p.target));
-    println!("  pledged  {} from {} backer(s)", fmt_usdc(p.total_pledged), p.backer_count);
-    println!("  vault    {} ({})", p.vault, fmt_usdc(app.usdc_at(&p.vault)));
+    println!(
+        "  pledged  {} from {} backer(s)",
+        fmt_usdc(p.total_pledged),
+        p.backer_count
+    );
+    println!(
+        "  vault    {} ({})",
+        p.vault,
+        fmt_usdc(app.usdc_at(&p.vault))
+    );
     println!("  deadline {}", p.deadline);
     if p.kind == ProjectKind::Community {
         for (i, c) in p.candidates.iter().enumerate() {
@@ -656,7 +788,11 @@ fn balances(app: &App) -> Result<()> {
         ("backer1", w.backer1.pubkey()),
         ("backer2", w.backer2.pubkey()),
     ] {
-        println!("{name:8} {who}  {} | {}", fmt_sol(app.sol(&who)), fmt_usdc(app.usdc(&who)));
+        println!(
+            "{name:8} {who}  {} | {}",
+            fmt_sol(app.sol(&who)),
+            fmt_usdc(app.usdc(&who))
+        );
     }
     println!(
         "treasury {}  {}",
@@ -711,25 +847,176 @@ impl App {
     }
 }
 
+fn make_app(url: &str, keypair: &str) -> Result<App> {
+    Ok(App {
+        rpc: RpcClient::new_with_commitment(url.to_string(), CommitmentConfig::confirmed()),
+        url: url.to_string(),
+        main: read_keypair(&expand(keypair))?,
+    })
+}
+
+/// The whole Demo Day story, then (optionally) an automatic reset.
+fn run_demo(app: &App, seconds: i64, reset_after: u64, on_reset: &dyn Fn()) -> Result<()> {
+    let w = setup_wallets(app)?;
+    init_treasury(app)?;
+    demo_success(app, &w, seconds)?;
+    demo_fail(app, &w, seconds)?;
+    println!("\n✅ Demo complete.");
+    if reset_after > 0 {
+        println!("   Resetting in {reset_after} s (Ctrl+C to keep the final state)…");
+        sleep(Duration::from_secs(reset_after));
+        on_reset();
+        reset(app)?;
+    }
+    Ok(())
+}
+
+fn reset(app: &App) -> Result<()> {
+    recycle(app)?;
+    setup_wallets(app)?;
+    println!("\n✅ Reset. Backers are loaded with pledge + tip; creators are at 0.");
+    println!("   The town treasury keeps its fees: nobody can withdraw them (no door yet).");
+    Ok(())
+}
+
+// ================================================================ serve
+
+const ALLOWED_ORIGINS: [&str; 1] = ["https://hometownher0.github.io"];
+
+fn origin_ok(origin: &str) -> bool {
+    ALLOWED_ORIGINS.contains(&origin)
+        || origin.starts_with("http://127.0.0.1:")
+        || origin.starts_with("http://localhost:")
+}
+
+/// Tiny HTTP server for the live page's "Run demo" button.
+///   GET  /status -> {"state":"idle"|"running"|"resetting","error":...}
+///   POST /run    -> starts the demo (one at a time)
+/// Binds to 127.0.0.1, so only this computer can reach it, and only the
+/// TownFund page (or a local page) may call it from a browser.
+fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64) -> Result<()> {
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        sync::{Arc, Mutex},
+    };
+    make_app(&url, &keypair)?; // fail fast if the keypair can't be read
+    let listener = TcpListener::bind(("127.0.0.1", port))
+        .with_context(|| format!("port {port} is busy; is another runner already open?"))?;
+    println!("\n🟢 Runner ready on http://127.0.0.1:{port}");
+    println!("   Open https://hometownher0.github.io/TownFund/?presenter and press Run demo.");
+    println!("   (Ctrl+C to stop.)");
+    let state = Arc::new(Mutex::new(("idle".to_string(), String::new())));
+
+    for stream in listener.incoming() {
+        let Ok(mut stream) = stream else { continue };
+        let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+        let mut buf = [0u8; 8192];
+        let n = stream.read(&mut buf).unwrap_or(0);
+        let req = String::from_utf8_lossy(&buf[..n]).to_string();
+        let mut lines = req.lines();
+        let first = lines.next().unwrap_or("");
+        let mut parts = first.split_whitespace();
+        let (method, path) = (parts.next().unwrap_or(""), parts.next().unwrap_or(""));
+        let origin = lines
+            .clone()
+            .find_map(|l| {
+                l.strip_prefix("Origin: ")
+                    .or_else(|| l.strip_prefix("origin: "))
+            })
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        let respond = |stream: &mut std::net::TcpStream, code: &str, body: &str| {
+            let cors = if origin_ok(&origin) {
+                format!(
+                    "Access-Control-Allow-Origin: {origin}\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\n\
+                     Access-Control-Allow-Headers: content-type\r\nAccess-Control-Allow-Private-Network: true\r\nVary: Origin\r\n"
+                )
+            } else {
+                String::new()
+            };
+            let _ = write!(
+                stream,
+                "HTTP/1.1 {code}\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n{cors}\
+                 Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+        };
+
+        if !origin.is_empty() && !origin_ok(&origin) {
+            respond(
+                &mut stream,
+                "403 Forbidden",
+                r#"{"error":"origin not allowed"}"#,
+            );
+            continue;
+        }
+        let status_json = |st: &(String, String)| {
+            serde_json::json!({ "state": st.0, "error": if st.1.is_empty() { None } else { Some(&st.1) } }).to_string()
+        };
+        match (method, path) {
+            ("OPTIONS", _) => respond(&mut stream, "204 No Content", ""),
+            ("GET", "/status") => {
+                let st = state.lock().unwrap().clone();
+                respond(&mut stream, "200 OK", &status_json(&st));
+            }
+            ("POST", "/run") => {
+                let mut st = state.lock().unwrap();
+                if st.0 != "idle" {
+                    let body = status_json(&st);
+                    drop(st);
+                    respond(&mut stream, "409 Conflict", &body);
+                    continue;
+                }
+                *st = ("running".into(), String::new());
+                drop(st);
+                respond(&mut stream, "202 Accepted", r#"{"state":"running"}"#);
+                let (state, url, keypair) = (state.clone(), url.clone(), keypair.clone());
+                std::thread::spawn(move || {
+                    println!("\n▶️  Run demo pressed on the page");
+                    let set = |s: &str| state.lock().unwrap().0 = s.to_string();
+                    let result = make_app(&url, &keypair)
+                        .and_then(|app| run_demo(&app, seconds, reset_after, &|| set("resetting")));
+                    let mut st = state.lock().unwrap();
+                    *st = (
+                        "idle".into(),
+                        result.err().map(|e| format!("{e:#}")).unwrap_or_default(),
+                    );
+                    if !st.1.is_empty() {
+                        eprintln!("❌ {}", st.1);
+                    }
+                });
+            }
+            _ => respond(&mut stream, "404 Not Found", r#"{"error":"not found"}"#),
+        }
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let main = read_keypair(&expand(&cli.keypair))?;
-    let app = App {
-        rpc: RpcClient::new_with_commitment(cli.url.clone(), CommitmentConfig::confirmed()),
-        url: cli.url.clone(),
-        main,
-    };
+    let app = make_app(&cli.url, &cli.keypair)?;
     println!("TownFund program {}", townfund::id());
     println!("Main wallet      {}", app.main.pubkey());
 
     match cli.cmd {
-        Cmd::Demo { seconds } => {
-            let w = setup_wallets(&app)?;
-            init_treasury(&app)?;
-            demo_success(&app, &w, seconds)?;
-            demo_fail(&app, &w, seconds)?;
-            println!("\n✅ Demo complete.");
-        }
+        Cmd::Demo {
+            seconds,
+            reset_after,
+        } => run_demo(&app, seconds, reset_after, &|| {})?,
+        Cmd::Serve {
+            port,
+            seconds,
+            reset_after,
+        } => serve(
+            cli.url.clone(),
+            cli.keypair.clone(),
+            port,
+            seconds,
+            reset_after,
+        )?,
         Cmd::SetupWallets => {
             setup_wallets(&app)?;
         }
@@ -747,6 +1034,7 @@ fn main() -> Result<()> {
         Cmd::Status { project } => status(&app, &project)?,
         Cmd::Balances => balances(&app)?,
         Cmd::Recycle => recycle(&app)?,
+        Cmd::Reset => reset(&app)?,
     }
     Ok(())
 }

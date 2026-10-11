@@ -182,7 +182,7 @@ on LiteSVM (an in-memory Solana chain). GitHub Actions runs both on every push.
 ## Run the demo (Devnet)
 
 ```bash
-cargo run -p townfund-cli -- demo --seconds 20
+cargo run -p townfund-cli -- demo
 ```
 
 One command runs the Demo Day story against the live program and prints an
@@ -200,10 +200,30 @@ Explorer link for every step:
    marks it Failed, Backer 2 gets the 5 back, and the tip stays with Creator 2
    (tips are not refundable)
 
-Other commands: `setup-wallets`, `init-treasury`, `demo-success`, `demo-fail`,
-`status <project>`, `balances`, `recycle` (sends demo USDC back to your main
-wallet for another rehearsal). The first run needs ~17 USDC in the main wallet;
-after `recycle`, each run only uses up the 0.5 USDC treasury fee.
+4. **Resets** 15 s after it finishes (`--reset-after N` to change, `0` to
+   keep the final state): creators' USDC goes back to your main wallet and
+   both backers are topped up to pledge + tip (11 and 6 USDC), ready for the
+   next run. The treasury keeps its fees: V1 has no way to withdraw them.
+
+### Run it from the live page (Demo Day)
+
+```bash
+cargo run -p townfund-cli -- serve
+```
+
+Starts a small runner on `http://127.0.0.1:8787` (this computer only). Open
+the live page with `?presenter` at the end of the address
+(`https://hometownher0.github.io/TownFund/?presenter`) and press **Run
+demo**: the button shows Running…, Resetting…, then Run demo again. The
+runner signs with the keys on your computer; nothing is sent to the page but
+"start" and the status. Visitors without `?presenter` never see the button.
+Only the TownFund page or a local page may call the runner. Chrome may ask
+once to allow the page to reach devices on your local network: allow it.
+
+Other commands: `reset`, `setup-wallets`, `init-treasury`, `demo-success`,
+`demo-fail`, `status <project>`, `balances`, `recycle` (sends demo USDC back
+to your main wallet). The first run needs ~17 USDC in the main wallet; after
+that each run only uses up the 0.5 USDC treasury fee.
 
 ## Backer badge
 

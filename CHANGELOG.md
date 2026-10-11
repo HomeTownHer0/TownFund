@@ -9,6 +9,24 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 11:00 · "Run demo" button, auto-reset, slower coins
+- `demo` now resets itself 15 s after it finishes (`--reset-after`, `0` to
+  keep the final state): creators emptied back to the main wallet, backers
+  topped up to pledge + tip (11 and 6 USDC). New `reset` command does the same
+  on demand. The treasury keeps its fees (no withdraw in V1).
+- New `serve` command: a small runner on `127.0.0.1:8787` for the live
+  page. Opening the page with `?presenter` shows a **Run demo** button
+  (Running… → Resetting… → Run demo). Only this computer can reach the
+  runner, only the TownFund page (or a local page) may call it, and keys stay
+  on the computer.
+- After a reset every box returns to its starting value within a second or
+  two, TIP included.
+- Coins move slower (2.6 s per road) so each transfer can be followed.
+- Settle retries if the connection to Devnet drops (safe: the program
+  refuses a second settle).
+- Verified on a local chain: two back-to-back button runs, each followed by
+  a full reset.
+
 ### 10:10 · TIP starts at 0 when the page opens
 - TIP now counts only tips made after the page was opened (and in the
   current run), so it reads 0 immediately on load instead of showing the
