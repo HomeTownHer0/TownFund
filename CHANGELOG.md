@@ -14,7 +14,7 @@ the program (verified: same source, same 409,488-byte build).
   boxes change as coins land, presenter row in the build plan, runner in the
   code map and Safety. Build badge points at the renamed repo
   (`HomeTownHer0/TownFund`).
-- GitHub: repository description, live-page link and topics set.
+- Live page's "Code on GitHub" link and the git remote use the new name.
 
 ### 12:45 · Boxes change when the coin lands
 - Fixed: Creator 2 showed Backer 2's tip before the coin reached it (and
