@@ -276,7 +276,7 @@
 </div>
 
 <script type="module">
-import { CONFIG, fetchState, fetchActivity, usdc, short } from "./townfund.js";
+import { CONFIG, fetchState, fetchActivity, fetchLatestSignature, RateLimited, usdc, short } from "./townfund.js";
 
 // ---- config (URL parameters override, for testing against a local chain)
 const q = new URLSearchParams(location.search);
@@ -479,45 +479,65 @@ setInterval(() => {
 const txCache = new Map();
 const seen = new Set();
 async function refreshFeed() {
-  if (!last) return;
+  if (!last) return true;
   const labels = { [cfg.wallets.creator]: "Creator", [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.treasury]: "Treasury" };
   if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
-  try {
-    const items = await fetchActivity(txCache, labels, cfg, 12);
-    const first = seen.size === 0;
-    $("#feed").innerHTML = items.length ? items.map((a) => {
-      const isNew = !first && !seen.has(a.signature);
-      seen.add(a.signature);
-      const t = a.time ? new Date(a.time * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "";
-      const moves = a.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(", ");
-      return `<li class="${isNew ? "fresh" : ""}"><time>${t}</time><div><a href="${explorer("tx", a.signature)}">${esc(a.name)}</a>${a.ok ? "" : " (failed)"}${moves ? `<div class="moves">${moves}</div>` : ""}</div></li>`;
-    }).join("") : `<li class="empty" style="display:block">No transactions yet.</li>`;
-  } catch { /* the next refresh retries */ }
+  const items = await fetchActivity(txCache, labels, cfg, 12);
+  const first = seen.size === 0;
+  $("#feed").innerHTML = items.length ? items.map((a) => {
+    const isNew = !first && !seen.has(a.signature);
+    seen.add(a.signature);
+    const t = a.time ? new Date(a.time * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "";
+    const moves = a.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(", ");
+    return `<li class="${isNew ? "fresh" : ""}"><time>${t}</time><div><a href="${explorer("tx", a.signature)}">${esc(a.name)}</a>${a.ok ? "" : " (failed)"}${moves ? `<div class="moves">${moves}</div>` : ""}</div></li>`;
+  }).join("") : `<li class="empty" style="display:block">No transactions yet.</li>`;
+  return items.complete;
 }
 
 // ---- polling loop
+// Solana's free public Devnet server limits how often one browser may ask.
+// So every 2.5 s the page asks one cheap question ("anything new?") and only
+// reloads everything when TownFund actually did something, or every 20 s.
 const live = $("#live"), liveText = $("#live-text");
-let failures = 0;
+const POLL_MS = 2500, FULL_EVERY_MS = 20000;
+let lastSig = undefined, lastFull = 0, feedPending = true, backoff = 0;
+const stamp = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+
 async function tick() {
+  let wait = POLL_MS;
   try {
-    const st = await fetchState(cfg);
-    if (st.chainTime) chainOffset = st.chainTime - st.fetchedAt / 1000;
-    last = st;
-    render(st);
-    failures = 0;
+    const sig = await fetchLatestSignature(cfg);
+    const changed = sig !== lastSig;
+    if (changed || Date.now() - lastFull > FULL_EVERY_MS || !last) {
+      const st = await fetchState(cfg);
+      if (st.chainTime) chainOffset = st.chainTime - st.fetchedAt / 1000;
+      last = st;
+      lastFull = Date.now();
+      render(st);
+      if (changed) feedPending = true;
+    }
+    if (feedPending) feedPending = !(await refreshFeed());
+    lastSig = sig;
+    backoff = 0;
     live.className = "live ok";
-    liveText.textContent = `Live on Devnet${custom ? " (custom RPC)" : ""}, updated ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
+    liveText.textContent = `Live on Devnet${custom ? " (custom RPC)" : ""}, checked ${stamp()}`;
   } catch (e) {
-    failures++;
-    live.className = "live err";
-    liveText.textContent = "Reconnecting to Devnet…";
+    if (e instanceof RateLimited) {
+      backoff = Math.min(30000, backoff ? backoff * 2 : 5000);
+      wait = backoff;
+      live.className = "live err";
+      liveText.textContent = `Devnet is busy, retrying in ${Math.round(wait / 1000)} s`;
+    } else {
+      backoff = Math.min(15000, backoff ? backoff * 2 : 3000);
+      wait = backoff;
+      live.className = "live err";
+      liveText.textContent = "Reconnecting to Devnet…";
+    }
   }
-  setTimeout(tick, Math.min(15000, 2500 * Math.max(1, failures)));
+  setTimeout(tick, document.hidden ? Math.max(wait, 10000) : wait);
 }
 tick();
-refreshFeed();
-setInterval(refreshFeed, 6000);
 </script>
 </body>
 </html>

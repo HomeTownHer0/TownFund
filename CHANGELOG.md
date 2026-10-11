@@ -7,6 +7,20 @@ The program deployed on Devnet (`FdaMK3…PXrv`) was built from commit
 **b86740d**. Later entries changed only the demo tool, tests and docs, not
 the program (verified: same source, same 409,488-byte build).
 
+## 2026-10-11
+
+### 07:45 · Live page: works within Devnet's rate limits
+- Fixed: on the public Devnet server the page showed "Reconnecting" with
+  HTTP 429 (too many requests). It sent ~13 requests every 2.5 s, including
+  5 account searches.
+- Now it asks one cheap question every 2.5 s ("any new TownFund
+  transaction?") and reloads only when something happened, or every 20 s,
+  using 1 account search instead of 5. About 16 requests per 10 s.
+- If Devnet still says "slow down", the page backs off (5–30 s) and says
+  "Devnet is busy, retrying in N s".
+- Fixed the published link: GitHub Pages paths are case-sensitive
+  (`/TownFund/`).
+
 ## 2026-10-10
 
 ### 20:05 · Live status page

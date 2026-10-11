@@ -15,8 +15,6 @@ export const CONFIG = {
   },
 };
 
-// Account discriminators (first 8 bytes), from the program's IDL.
-const DISC = { project: "bQ9n6Kmh9zA", pledge: "U4PLFQvCKer", badge: "7mtScFmiAfh" };
 
 export const KIND = ["Creator", "Community"];
 export const STATUS = ["Active", "Cancelled", "Succeeded", "Failed"];
@@ -100,6 +98,7 @@ let rpcId = 0;
 export async function rpcBatch(url, calls, lenient = false) {
   const body = calls.map(([method, params]) => ({ jsonrpc: "2.0", id: ++rpcId, method, params }));
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (res.status === 429) throw new RateLimited("Devnet rate limit");
   if (!res.ok) throw new Error(`RPC HTTP ${res.status}`);
   const out = await res.json();
   const byId = new Map((Array.isArray(out) ? out : [out]).map((r) => [r.id, r]));
@@ -113,7 +112,6 @@ export async function rpcBatch(url, calls, lenient = false) {
   });
 }
 
-const memcmp = (offset, bytes) => ({ memcmp: { offset, bytes } });
 const usdcOf = (r) => {
   const accts = r?.value || [];
   return accts.reduce((sum, a) => sum + Number(a.account.data.parsed.info.tokenAmount.amount), 0);
@@ -121,44 +119,69 @@ const usdcOf = (r) => {
 
 // ---------------------------------------------------------------- state
 /** One snapshot of everything the page shows. */
+/** Thrown when the RPC says "too many requests" (HTTP 429). */
+export class RateLimited extends Error {}
+
+/** Cheap check: newest TownFund transaction signature (1 request). */
+export async function fetchLatestSignature(cfg = CONFIG) {
+  const [sigs] = await rpcBatch(cfg.rpc, [["getSignaturesForAddress", [cfg.program, { limit: 1, commitment: "confirmed" }]]]);
+  return sigs?.[0]?.signature || null;
+}
+
+const sameBytes = (data, disc) => disc.every((b, i) => data[i] === b);
+const DISC_BYTES = {
+  project: [205, 168, 189, 202, 181, 247, 142, 19],
+  pledge: [161, 197, 121, 46, 99, 75, 169, 131],
+  badge: [40, 127, 162, 181, 177, 154, 1, 48],
+};
+
+/**
+ * One full snapshot of everything the page shows, in 2 HTTP requests:
+ *  1. wallet + treasury balances, ALL TownFund accounts (one
+ *     getProgramAccounts, no filters), and the slot
+ *  2. the chain clock and the two shown vaults' balances
+ */
 export async function fetchState(cfg = CONFIG) {
   const w = cfg.wallets;
   const tokenByOwner = (owner) => ["getTokenAccountsByOwner", [owner, { mint: cfg.usdcMint }, { encoding: "jsonParsed", commitment: "confirmed" }]];
 
-  const [c, b1, b2, treasury, projectAccts, slot] = await rpcBatch(cfg.rpc, [
+  const [c, b1, b2, treasury, all, slot] = await rpcBatch(cfg.rpc, [
     tokenByOwner(w.creator),
     tokenByOwner(w.backer1),
     tokenByOwner(w.backer2),
     ["getTokenAccountBalance", [cfg.treasuryVault, { commitment: "confirmed" }]],
-    ["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed", filters: [memcmp(0, DISC.project), memcmp(13, w.creator)] }]],
+    ["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed" }]],
     ["getSlot", [{ commitment: "confirmed" }]],
   ], true);
-  if (slot == null) throw new Error("Devnet did not answer");
+  if (slot == null || all == null) throw new Error("Devnet did not answer");
 
-  const projects = (projectAccts || [])
-    .map((a) => decodeProject(a.pubkey, fromBase64(a.account.data[0])))
-    .sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
-  const success = projects.find((p) => p.kind === "Creator") || null;
-  const community = projects.find((p) => p.kind === "Community") || null;
-  const shown = [success, community].filter(Boolean);
-
-  const calls = [["getBlockTime", [slot]]];
-  for (const p of shown) {
-    calls.push(["getTokenAccountBalance", [p.vault, { commitment: "confirmed" }]]);
-    calls.push(["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed", filters: [memcmp(0, DISC.pledge), memcmp(10, p.address)] }]]);
-    calls.push(["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed", filters: [memcmp(0, DISC.badge), memcmp(10, p.address)] }]]);
+  const projects = [], pledges = [], badges = [];
+  for (const a of all) {
+    const data = fromBase64(a.account.data[0]);
+    if (sameBytes(data, DISC_BYTES.project)) projects.push(decodeProject(a.pubkey, data));
+    else if (sameBytes(data, DISC_BYTES.pledge)) pledges.push(decodePledge(a.pubkey, data));
+    else if (sameBytes(data, DISC_BYTES.badge)) badges.push(decodeBadge(a.pubkey, data));
   }
-  const res = await rpcBatch(cfg.rpc, calls, true);
-  const chainTime = res[0];
-  shown.forEach((p, i) => {
-    p.vaultBalance = Number(res[1 + i * 3]?.value?.amount ?? 0);
-    p.pledges = (res[2 + i * 3] || []).map((a) => decodePledge(a.pubkey, fromBase64(a.account.data[0])));
-    p.badges = (res[3 + i * 3] || []).map((a) => decodeBadge(a.pubkey, fromBase64(a.account.data[0])));
-  });
+  const mine = projects
+    .filter((p) => p.creator === w.creator)
+    .sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
+  const success = mine.find((p) => p.kind === "Creator") || null;
+  const community = mine.find((p) => p.kind === "Community") || null;
+  const shown = [success, community].filter(Boolean);
+  for (const p of shown) {
+    p.pledges = pledges.filter((x) => x.project === p.address);
+    p.badges = badges.filter((x) => x.project === p.address);
+  }
+
+  const res = await rpcBatch(cfg.rpc, [
+    ["getBlockTime", [slot]],
+    ...shown.map((p) => ["getTokenAccountBalance", [p.vault, { commitment: "confirmed" }]]),
+  ], true);
+  shown.forEach((p, i) => { p.vaultBalance = Number(res[1 + i]?.value?.amount ?? 0); });
 
   return {
     fetchedAt: Date.now(),
-    chainTime,
+    chainTime: res[0],
     balances: {
       creator: usdcOf(c),
       backer1: usdcOf(b1),
@@ -167,7 +190,7 @@ export async function fetchState(cfg = CONFIG) {
     },
     success,
     community,
-    projectCount: projects.length,
+    projectCount: mine.length,
   };
 }
 
@@ -189,12 +212,16 @@ const IX_NAMES = {
  */
 export async function fetchActivity(cache, labels, cfg = CONFIG, limit = 12) {
   const [sigs] = await rpcBatch(cfg.rpc, [["getSignaturesForAddress", [cfg.program, { limit, commitment: "confirmed" }]]]);
-  const missing = sigs.filter((s) => !cache.has(s.signature));
+  // Look up at most 4 new transactions per call, so the public RPC isn't
+  // flooded; the rest are picked up on the next refresh.
+  const missing = sigs.filter((s) => !cache.has(s.signature)).slice(0, 4);
   if (missing.length) {
     const txs = await rpcBatch(cfg.rpc, missing.map((s) => ["getTransaction", [s.signature, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "confirmed" }]]), true);
     missing.forEach((s, i) => { if (txs[i]) cache.set(s.signature, describeTx(s, txs[i], labels, cfg)); });
   }
-  return sigs.map((s) => cache.get(s.signature)).filter(Boolean);
+  const items = sigs.map((s) => cache.get(s.signature)).filter(Boolean);
+  items.complete = sigs.every((s) => cache.has(s.signature));
+  return items;
 }
 
 function describeTx(sig, tx, labels, cfg) {
