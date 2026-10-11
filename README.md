@@ -48,8 +48,11 @@ in Solana School Fall 2026
 read-only page that shows every wallet, both project vaults and the town
 treasury straight from Devnet, updating every few seconds. Open it, then run
 the demo (below): coins move along the money map, and each box changes the
-moment its coin arrives. A "Latest move" line spells out every transaction,
-and each project's steps tick off as they happen. Nothing to install; it
+moment its coin arrives. Under the map, the **TownFund program log** prints
+every transaction as it lands: a one-line summary (who paid whom), then the
+program's own log lines as Solana recorded them (instruction, token
+transfer, compute units used, success), slot and fee. Each project's steps
+tick off as they happen. Nothing to install; it
 can't move money.
 
 On the map, **TIP** is a junction, not an account: on-chain a tip goes
@@ -222,7 +225,10 @@ cargo run -p townfund-cli -- serve
 Starts a small runner on `http://127.0.0.1:8787` (this computer only). Open
 the live page with `?presenter` at the end of the address
 (`https://hometownher0.github.io/TownFund/?presenter`) and press **Run
-demo**: the button shows Running…, Resetting…, then Run demo again. The
+demo**: the button shows Running…, Resetting…, then Run demo again. A
+**Terminal** pane next to the program log shows the runner's output line by
+line, the same text as in your Terminal window, with each transaction ID
+linking to Explorer. The
 runner signs with the keys on your computer; nothing is sent to the page but
 "start" and the status. Visitors without `?presenter` never see the button.
 Only the TownFund page or a local page may call the runner. Chrome may ask

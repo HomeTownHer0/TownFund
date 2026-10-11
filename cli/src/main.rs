@@ -890,14 +890,18 @@ fn origin_ok(origin: &str) -> bool {
 }
 
 /// Tiny HTTP server for the live page's "Run demo" button.
-///   GET  /status -> {"state":"idle"|"running"|"resetting","error":...}
-///   POST /run    -> starts the demo (one at a time)
+///   GET  /status?since=N -> {"state":"idle"|"running"|"resetting","error":...,
+///                            "next":M,"lines":[Terminal lines N..M]}
+///   POST /run            -> starts the demo (one at a time)
+/// The demo runs as a child process (this same program, `demo`), so its
+/// Terminal output can be shown on the page as well as here.
 /// Binds to 127.0.0.1, so only this computer can reach it, and only the
 /// TownFund page (or a local page) may call it from a browser.
 fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64) -> Result<()> {
     use std::{
         io::{Read, Write},
         net::TcpListener,
+        process::{Command, Stdio},
         sync::{Arc, Mutex},
     };
     make_app(&url, &keypair)?; // fail fast if the keypair can't be read
@@ -906,7 +910,32 @@ fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64
     println!("\n🟢 Runner ready on http://127.0.0.1:{port}");
     println!("   Open https://hometownher0.github.io/TownFund/?presenter and press Run demo.");
     println!("   (Ctrl+C to stop.)");
-    let state = Arc::new(Mutex::new(("idle".to_string(), String::new())));
+
+    struct Shared {
+        state: String,
+        error: String,
+        first: usize,       // number of the oldest line kept
+        lines: Vec<String>, // the newest lines of Terminal output
+    }
+    const KEEP: usize = 400;
+    let shared = Arc::new(Mutex::new(Shared {
+        state: "idle".into(),
+        error: String::new(),
+        first: 0,
+        lines: Vec::new(),
+    }));
+    let push = {
+        let shared = shared.clone();
+        move |line: &str| {
+            let mut s = shared.lock().unwrap();
+            s.lines.push(line.to_string());
+            if s.lines.len() > KEEP {
+                let extra = s.lines.len() - KEEP;
+                s.lines.drain(..extra);
+                s.first += extra;
+            }
+        }
+    };
 
     for stream in listener.incoming() {
         let Ok(mut stream) = stream else { continue };
@@ -917,16 +946,15 @@ fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64
         let mut lines = req.lines();
         let first = lines.next().unwrap_or("");
         let mut parts = first.split_whitespace();
-        let (method, path) = (parts.next().unwrap_or(""), parts.next().unwrap_or(""));
+        let (method, target) = (parts.next().unwrap_or(""), parts.next().unwrap_or(""));
+        let (path, query) = target.split_once('?').unwrap_or((target, ""));
         let origin = lines
             .clone()
             .find_map(|l| {
-                l.strip_prefix("Origin: ")
-                    .or_else(|| l.strip_prefix("origin: "))
+                let (k, v) = l.split_once(':')?;
+                k.eq_ignore_ascii_case("origin").then(|| v.trim().to_string())
             })
-            .unwrap_or("")
-            .trim()
-            .to_string();
+            .unwrap_or_default();
 
         let respond = |stream: &mut std::net::TcpStream, code: &str, body: &str| {
             let cors = if origin_ok(&origin) {
@@ -946,46 +974,120 @@ fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64
         };
 
         if !origin.is_empty() && !origin_ok(&origin) {
-            respond(
-                &mut stream,
-                "403 Forbidden",
-                r#"{"error":"origin not allowed"}"#,
-            );
+            respond(&mut stream, "403 Forbidden", r#"{"error":"origin not allowed"}"#);
             continue;
         }
-        let status_json = |st: &(String, String)| {
-            serde_json::json!({ "state": st.0, "error": if st.1.is_empty() { None } else { Some(&st.1) } }).to_string()
-        };
         match (method, path) {
             ("OPTIONS", _) => respond(&mut stream, "204 No Content", ""),
             ("GET", "/status") => {
-                let st = state.lock().unwrap().clone();
-                respond(&mut stream, "200 OK", &status_json(&st));
+                let since: usize = query
+                    .split('&')
+                    .find_map(|kv| kv.strip_prefix("since="))
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(usize::MAX);
+                let s = shared.lock().unwrap();
+                let next = s.first + s.lines.len();
+                // since=N: lines from N on (or the last 40 if N is too old/new)
+                let from = if since >= s.first && since <= next { since } else { next.saturating_sub(40).max(s.first) };
+                let body = serde_json::json!({
+                    "state": s.state,
+                    "error": if s.error.is_empty() { None } else { Some(&s.error) },
+                    "next": next,
+                    "lines": &s.lines[from - s.first..],
+                })
+                .to_string();
+                drop(s);
+                respond(&mut stream, "200 OK", &body);
             }
             ("POST", "/run") => {
-                let mut st = state.lock().unwrap();
-                if st.0 != "idle" {
-                    let body = status_json(&st);
-                    drop(st);
-                    respond(&mut stream, "409 Conflict", &body);
+                let mut s = shared.lock().unwrap();
+                if s.state != "idle" {
+                    drop(s);
+                    respond(&mut stream, "409 Conflict", r#"{"error":"busy"}"#);
                     continue;
                 }
-                *st = ("running".into(), String::new());
-                drop(st);
+                s.state = "running".into();
+                s.error.clear();
+                drop(s);
                 respond(&mut stream, "202 Accepted", r#"{"state":"running"}"#);
-                let (state, url, keypair) = (state.clone(), url.clone(), keypair.clone());
+
+                let (shared, push) = (shared.clone(), push.clone());
+                let (url, keypair) = (url.clone(), keypair.clone());
                 std::thread::spawn(move || {
-                    println!("\n▶️  Run demo pressed on the page");
-                    let set = |s: &str| state.lock().unwrap().0 = s.to_string();
-                    let result = make_app(&url, &keypair)
-                        .and_then(|app| run_demo(&app, seconds, reset_after, &|| set("resetting")));
-                    let mut st = state.lock().unwrap();
-                    *st = (
-                        "idle".into(),
-                        result.err().map(|e| format!("{e:#}")).unwrap_or_default(),
-                    );
-                    if !st.1.is_empty() {
-                        eprintln!("❌ {}", st.1);
+                    let say = |line: &str| {
+                        println!("{line}");
+                        push(line);
+                    };
+                    say("");
+                    say("▶️  Run demo pressed on the page");
+                    let child = std::env::current_exe().map_err(anyhow::Error::from).and_then(|exe| {
+                        Command::new(exe)
+                            .args(["--url", &url, "--keypair", &keypair, "demo"])
+                            .args(["--seconds", &seconds.to_string(), "--reset-after", &reset_after.to_string()])
+                            .stdout(Stdio::piped())
+                            .stderr(Stdio::piped())
+                            .spawn()
+                            .map_err(anyhow::Error::from)
+                    });
+                    let mut child = match child {
+                        Ok(c) => c,
+                        Err(e) => {
+                            let mut s = shared.lock().unwrap();
+                            s.state = "idle".into();
+                            s.error = format!("could not start the demo: {e:#}");
+                            return;
+                        }
+                    };
+                    // Errors (stderr) are collected and shown at the end.
+                    let stderr = child.stderr.take().unwrap();
+                    let errs = std::thread::spawn(move || {
+                        let mut t = String::new();
+                        let _ = std::io::BufReader::new(stderr).read_to_string(&mut t);
+                        t
+                    });
+                    // Terminal output: echo here, keep for the page. The
+                    // countdown rewrites one line with '\r'; each rewrite
+                    // becomes its own line for the page.
+                    let mut out = child.stdout.take().unwrap();
+                    let (mut chunk, mut pending) = ([0u8; 4096], Vec::<u8>::new());
+                    loop {
+                        let n = out.read(&mut chunk).unwrap_or(0);
+                        if n == 0 {
+                            break;
+                        }
+                        let _ = std::io::stdout().write_all(&chunk[..n]);
+                        let _ = std::io::stdout().flush();
+                        for &byte in &chunk[..n] {
+                            if byte != b'\n' && byte != b'\r' {
+                                pending.push(byte);
+                                continue;
+                            }
+                            let part = String::from_utf8_lossy(&pending).trim_end().to_string();
+                            pending.clear();
+                            if part.trim().is_empty() {
+                                continue;
+                            }
+                            if part.contains("Resetting in") {
+                                shared.lock().unwrap().state = "resetting".into();
+                            }
+                            push(&part);
+                        }
+                    }
+                    let ok = child.wait().map(|s| s.success()).unwrap_or(false);
+                    let err_text = errs.join().unwrap_or_default();
+                    for l in err_text.lines().filter(|l| !l.trim().is_empty()) {
+                        eprintln!("{l}");
+                        push(&format!("❌ {l}"));
+                    }
+                    let mut s = shared.lock().unwrap();
+                    s.state = "idle".into();
+                    if !ok {
+                        s.error = err_text
+                            .lines()
+                            .rev()
+                            .find(|l| !l.trim().is_empty())
+                            .unwrap_or("the demo stopped")
+                            .to_string();
                     }
                 });
             }

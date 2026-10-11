@@ -7,7 +7,7 @@
 <meta name="description" content="Watch TownFund move money through escrow on Solana Devnet, live.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --asphalt: #25282a;
@@ -87,12 +87,35 @@
   .coin circle { fill: var(--amber); stroke: #fff; stroke-width: 2; }
   .coin text { fill: var(--amber); font-weight: 800; font-size: 16px; }
 
-  .latest { display: flex; align-items: baseline; gap: 10px; margin: 6px 4px 0; padding: 10px 14px; border-radius: 10px; background: var(--asphalt-3); min-height: 46px; }
-  .latest .what { font-weight: 800; color: var(--amber); white-space: nowrap; }
-  .latest .moves { color: var(--paint); }
-  .latest .plus { color: #7dffb0; }
-  .latest .minus { color: #ffb3bd; }
-  .latest.fresh { animation: fresh 2.4s ease-out; }
+  /* live consoles under the map */
+  .consoles { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 8px 4px 0; }
+  .consoles.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .consoles.two { grid-template-columns: 1fr; } }
+  .term { background: #0c0f12; border: 1px solid #262c31; border-radius: 10px; overflow: hidden; min-width: 0; }
+  .term header { display: flex; align-items: center; gap: 10px; padding: 7px 12px; background: #161b1f; border-bottom: 1px solid #262c31; font-size: 14px; }
+  .term header .dots { display: inline-flex; gap: 5px; }
+  .term header .dots i { width: 9px; height: 9px; border-radius: 50%; background: #3a4147; }
+  .term header .dots i:first-child { background: #ff5f57; } .term header .dots i:nth-child(2) { background: #febc2e; } .term header .dots i:nth-child(3) { background: #28c840; }
+  .term header b { color: var(--paint); }
+  .term header .src { color: var(--curb); margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .term pre { margin: 0; height: 236px; overflow: auto; padding: 10px 12px; font: 13.5px/1.5 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9d1d9; white-space: pre-wrap; word-break: break-word; }
+  .term pre a { color: #79c0ff; text-decoration: none; } .term pre a:hover { text-decoration: underline; }
+  .term .l { display: block; }
+  .term .l.new { animation: lineIn .25s ease-out; }
+  @keyframes lineIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+  .term .prompt { color: #7d8590; }
+  .term .sum { color: var(--paint); margin-top: 6px; }
+  .term .sum .what { color: var(--amber); font-weight: 700; }
+  .term .t { color: #7d8590; }
+  .term .plus { color: #7ee787; } .term .minus { color: #ffa198; }
+  .term .dim { color: #7d8590; }
+  .term .ok { color: #7ee787; }
+  .term .err { color: #ff7b72; }
+  .term .cu { color: #d2a8ff; }
+  .term .wait { color: #e3b341; }
+  .term .head { color: #79c0ff; font-weight: 700; margin-top: 6px; }
+  .term .cursor { display: inline-block; width: .6em; height: 1.1em; vertical-align: -2px; background: #c9d1d9; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 10px 4px 0; color: var(--curb); font-size: 14px; }
   .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
   .lg-green::before { background: var(--sign); box-shadow: inset 0 0 0 2px #fff; }
@@ -273,7 +296,16 @@
       </g>
       <g id="coins"></g>
     </svg>
-    <div class="latest" id="latest" role="status" aria-live="polite"><span class="what">Latest move</span><span class="moves">Waiting for the next transaction…</span></div>
+    <div class="consoles" id="consoles">
+      <section class="term" aria-label="TownFund program log, live from Devnet">
+        <header><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><b>TownFund program log</b><span class="src">every transaction, live from Devnet</span></header>
+        <pre id="chain-log" role="log" aria-live="polite"></pre>
+      </section>
+      <section class="term" id="term-runner" aria-label="Terminal output of the demo runner" hidden>
+        <header><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><b>Terminal</b><span class="src">townfund serve, on this computer</span></header>
+        <pre id="runner-log" role="log"></pre>
+      </section>
+    </div>
     <div class="legend">
       <span class="lg-green">Wallet, or a project that paid out</span>
       <span class="lg-amber">Money held in escrow</span>
@@ -543,6 +575,81 @@ setInterval(() => {
   }
 }, 250);
 
+// ---- live consoles: a line-by-line "terminal" under the map
+// Lines are queued and printed one at a time, so the audience can follow.
+function makeConsole(pre, { max = 300, gap = 90 } = {}) {
+  const queue = [];
+  let timer = null;
+  const cursor = document.createElement("span");
+  cursor.className = "cursor";
+  pre.appendChild(cursor);
+  const nearBottom = () => pre.scrollHeight - pre.scrollTop - pre.clientHeight < 40;
+  const add = (html, cls, animate) => {
+    const stick = nearBottom();
+    const el = document.createElement("span");
+    el.className = "l " + (cls || "") + (animate ? " new" : "");
+    el.innerHTML = html || "&nbsp;";
+    pre.insertBefore(el, cursor);
+    while (pre.childElementCount > max + 1) pre.firstElementChild.remove();
+    if (stick) pre.scrollTop = pre.scrollHeight;
+    return el;
+  };
+  const pump = () => {
+    timer = null;
+    const item = queue.shift();
+    if (!item) return;
+    if (item.replace && pre.childElementCount > 1 && cursor.previousElementSibling?.dataset.replace === item.replace) {
+      cursor.previousElementSibling.remove();
+    }
+    const el = add(item.html, item.cls, !reduceMotion);
+    if (item.replace) el.dataset.replace = item.replace;
+    if (queue.length) timer = setTimeout(pump, document.hidden || reduceMotion ? 0 : gap);
+  };
+  return {
+    // print(lines): [{ html, cls, replace? }]; instant = no typing delay
+    print(lines, instant = false) {
+      if (instant) { for (const l of lines) add(l.html, l.cls, false).dataset.replace = l.replace || ""; return; }
+      queue.push(...lines);
+      if (!timer) pump();
+    },
+  };
+}
+const ts = (unix) => (unix ? new Date(unix * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "");
+
+// Program log pane: for each TownFund transaction, a one-line summary, then
+// the program's own log lines exactly as Solana recorded them.
+const chainLog = makeConsole($("#chain-log"));
+chainLog.print([{ html: `$ solana logs ${esc(cfg.program.slice(0, 4))}…${esc(cfg.program.slice(-4))} <span class="dim"># TownFund program, ${custom ? "custom RPC" : "Devnet"}</span>`, cls: "prompt" }], true);
+const printed = new Set();
+let printedFloor = 0; // don't print transactions older than the page
+function txLines(a) {
+  const moves = a.moves.length
+    ? a.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(" → ")
+    : `<span class="dim">no USDC moved</span>`;
+  const out = [{ cls: "sum", html: `<span class="t">${ts(a.time)}</span> ▸ <span class="what">${esc(a.name)}</span>  ${moves}  <a href="${explorer("tx", a.signature)}" target="_blank" rel="noopener">tx ${esc(short(a.signature))} ↗</a>` }];
+  for (const l of a.logs || []) {
+    const cls = / invoke \[/.test(l) ? "dim" : /consumed \d+ of \d+ compute units/.test(l) ? "cu" : / success$/.test(l) ? "ok" : /failed|Error/.test(l) ? "err" : /^Program data/.test(l) ? "dim" : "";
+    out.push({ cls, html: "  " + esc(l) });
+  }
+  out.push({ cls: a.ok ? "ok" : "err", html: `  ${a.ok ? "✔ confirmed" : "✘ failed"}${a.slot ? ` · slot ${a.slot.toLocaleString("en-US")}` : ""}${a.fee != null ? ` · fee ${(a.fee / 1e9).toFixed(6)} SOL` : ""}` });
+  return out;
+}
+function printTxs(items, first) {
+  // oldest first; on page load show only the newest transaction, instantly
+  const fresh = items.filter((a) => !printed.has(a.signature)).reverse();
+  if (first) {
+    items.forEach((a) => printed.add(a.signature));
+    printedFloor = items[0]?.time || 0;
+    if (items[0]) chainLog.print(txLines(items[0]), true);
+    chainLog.print([{ cls: "dim", html: "  … waiting for the next transaction" }], true);
+    return;
+  }
+  for (const a of fresh) {
+    printed.add(a.signature);
+    if ((a.time || 0) >= printedFloor) chainLog.print(txLines(a));
+  }
+}
+
 // ---- activity feed
 const txCache = new Map();
 let tipRun = { start: null, max: 0 };
@@ -570,17 +677,8 @@ async function refreshFeed() {
   tipRun.max = Math.max(tipRun.max, tipped);
   setVal(document.getElementById("n-tip"), tipRun.max, tipArriveAt - performance.now());
   const first = seen.size === 0;
-  // "Latest move" line on the map: the newest transaction, spelled out.
-  const newest = items[0];
-  if (newest) {
-    const el = $("#latest");
-    const moves = newest.moves.length
-      ? newest.moves.map((m) => `<span class="${m.amount > 0 ? "plus" : "minus"}">${esc(m.who)} ${m.amount > 0 ? "+" : "−"}${usdc(Math.abs(m.amount))}</span>`).join(" → ")
-      : "no money moved";
-    const t = newest.time ? new Date(newest.time * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : "";
-    el.innerHTML = `<span class="what">${esc(newest.name)}</span><span class="moves">${moves}</span><span class="moves" style="margin-left:auto;color:var(--curb)">${t}</span>`;
-    if (!first && !seen.has(newest.signature)) { el.classList.remove("fresh"); void el.offsetWidth; el.classList.add("fresh"); }
-  }
+  // Program log pane under the map.
+  printTxs(items, first);
   $("#feed").innerHTML = items.length ? items.map((a) => {
     const isNew = !first && !seen.has(a.signature);
     seen.add(a.signature);
@@ -649,15 +747,35 @@ if (q.has("presenter")) {
   const box = $("#runner"), btn = $("#run-btn"), note = $("#runner-text");
   box.hidden = false;
   const label = { running: "Running…", resetting: "Resetting…" };
-  let prevState = "idle";
+  let prevState = "idle", nextLine = null;
+  const runnerLog = makeConsole($("#runner-log"), { gap: 60 });
+  // One Terminal line -> console line: colors, and Explorer URLs as short links.
+  const termLine = (raw) => {
+    let cls = "";
+    if (/✅|✔/.test(raw)) cls = "ok";
+    else if (/❌|Error|failed/.test(raw)) cls = "err";
+    else if (/⏳|⏰/.test(raw)) cls = "wait";
+    else if (/━━|▶️|🟢/.test(raw)) cls = "head";
+    const html = esc(raw).replace(/https:\/\/explorer\.solana\.com\/(tx|address)\/([1-9A-HJ-NP-Za-km-z]+)[^\s<]*/g,
+      (url, kind, id) => `<a href="${url.replace(/&amp;/g, "&")}" target="_blank" rel="noopener">${kind === "tx" ? "tx" : "account"} ${short(id)} ↗</a>`);
+    // the deadline countdown rewrites one line, as in Terminal
+    return { html, cls, replace: /⏳/.test(raw) ? "countdown" : undefined };
+  };
   async function pollRunner() {
     try {
-      const r = await fetch(RUNNER + "/status", { cache: "no-store" });
+      const r = await fetch(RUNNER + "/status" + (nextLine == null ? "" : "?since=" + nextLine), { cache: "no-store" });
       const j = await r.json();
       // The reset moves USDC with plain token transfers (not TownFund
       // transactions), so reload the boxes as soon as it finishes.
       if (j.state === "idle" && prevState !== "idle") lastFull = 0;
       prevState = j.state;
+      if (Array.isArray(j.lines)) {
+        $("#term-runner").hidden = false;
+        $("#consoles").classList.add("two");
+        if (nextLine == null) runnerLog.print([{ cls: "prompt", html: "$ cargo run -p townfund-cli -- serve" }], true);
+        if (j.lines.length) runnerLog.print(j.lines.map(termLine), nextLine == null);
+        nextLine = j.next;
+      }
       btn.disabled = j.state !== "idle";
       btn.textContent = label[j.state] || "Run demo";
       note.textContent = j.error ? `Last run stopped: ${j.error.slice(0, 120)}` : "";
@@ -666,11 +784,12 @@ if (q.has("presenter")) {
       btn.textContent = "Run demo";
       note.textContent = "Runner not found. In Terminal: cargo run -p townfund-cli -- serve";
     }
-    setTimeout(pollRunner, 2000);
+    setTimeout(pollRunner, prevState === "idle" ? 2000 : 700);
   }
   btn.addEventListener("click", async () => {
     btn.disabled = true;
     btn.textContent = "Starting…";
+    prevState = "running"; // poll faster right away
     try { await fetch(RUNNER + "/run", { method: "POST" }); } catch { /* next poll shows the problem */ }
   });
   pollRunner();

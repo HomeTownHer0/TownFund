@@ -279,7 +279,30 @@ function describeTx(sig, tx, labels, cfg) {
     .filter(([, d]) => d !== 0)
     .map(([owner, d]) => ({ who: labels[owner] || short(owner), amount: d }))
     .sort((a, b) => a.amount - b.amount);
-  return { signature: sig.signature, time: sig.blockTime, ok: !sig.err, name, moves };
+  return {
+    signature: sig.signature, time: sig.blockTime, ok: !sig.err, name, moves,
+    slot: tx?.slot, fee: tx?.meta?.fee, logs: prettyLogs(logs, cfg),
+  };
+}
+
+// Program IDs shown by name in the program log.
+const PROGRAM_NAMES = {
+  TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA: "Token",
+  ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL: "AssociatedToken",
+  "11111111111111111111111111111111": "System",
+  CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d: "MetaplexCore",
+  ComputeBudget111111111111111111111111111111: "ComputeBudget",
+};
+
+/** The transaction's program log, with program IDs replaced by names. */
+function prettyLogs(logs, cfg) {
+  const names = { ...PROGRAM_NAMES, [cfg.program]: "TownFund" };
+  return logs.map((l) => {
+    let t = l.replace(/[1-9A-HJ-NP-Za-km-z]{32,44}/g, (id) => names[id] || short(id));
+    // Anchor events are base64 data: say what they are instead.
+    if (t.startsWith("Program data: ")) t = "Program data: <event emitted>";
+    return t;
+  });
 }
 
 export const short = (a) => (a ? `${a.slice(0, 4)}…${a.slice(-4)}` : "");

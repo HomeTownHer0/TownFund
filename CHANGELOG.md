@@ -9,6 +9,21 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 14:00 · Live consoles under the map
+- The "Latest move" bar is replaced by a **TownFund program log** pane:
+  every transaction, as it lands, prints a summary line (who paid whom, tx
+  link) and then the program's real log lines from Devnet (program invoked,
+  instruction, token transfer, event, compute units, success), with slot
+  and fee. Everyone sees it.
+- With `?presenter`, a **Terminal** pane beside it streams the runner's
+  output live (same lines as the Terminal window; the deadline countdown
+  updates in place; Explorer URLs become short links).
+- Runner: `serve` now runs the demo as a child process to capture its
+  output; `/status?since=N` returns new Terminal lines. **Restart `serve`
+  after pulling.**
+- Verified on a local chain: full run, both panes; visitor view shows only
+  the program log; no sideways scrolling at phone width.
+
 ### 13:05 · README and GitHub brought up to date
 - README: status (button + auto-reset), what TIP and the ★ mean on the map,
   boxes change as coins land, presenter row in the build plan, runner in the
