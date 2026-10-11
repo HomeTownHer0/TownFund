@@ -1,5 +1,5 @@
 # Publishes the live status page (site/) to GitHub Pages:
-#   https://hometownher0.github.io/townfund/
+#   https://hometownher0.github.io/TownFund/
 # Requires: repo Settings -> Pages -> Source: "GitHub Actions" (one-time).
 name: publish-live-page
 

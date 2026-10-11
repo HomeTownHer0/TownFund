@@ -43,7 +43,7 @@ in Solana School Fall 2026
 
 ### Watch it live
 
-**[hometownher0.github.io/townfund](https://hometownher0.github.io/townfund/)**: a
+**[hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)**: a
 read-only page that shows every wallet, both project vaults and the town
 treasury straight from Devnet, updating every few seconds. Open it, then run
 the demo (below): coins move along the money map, balances count up and down,
