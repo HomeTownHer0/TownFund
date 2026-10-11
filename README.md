@@ -223,16 +223,21 @@ cargo run -p townfund-cli -- serve
 ```
 
 Starts a small runner on `http://127.0.0.1:8787` (this computer only). Open
-the live page with `?presenter` at the end of the address
-(`https://hometownher0.github.io/TownFund/?presenter`) and press **Run
-demo**: the button shows Running…, Resetting…, then Run demo again. A
-**Terminal** pane next to the program log shows the runner's output line by
-line, the same text as in your Terminal window, with each transaction ID
-linking to Explorer. The
-runner signs with the keys on your computer; nothing is sent to the page but
-"start" and the status. Visitors without `?presenter` never see the button.
-Only the TownFund page or a local page may call the runner. Chrome may ask
-once to allow the page to reach devices on your local network: allow it.
+the live page and press **Run demo**: the button shows Running…,
+Resetting…, then Run demo again. A **Terminal** pane next to the program log
+shows the runner's output line by line, the same text as in your Terminal
+window, with each transaction ID linking to Explorer.
+
+The button and Terminal pane appear only on the presenter's computer. Turn
+that on once per browser by opening
+`https://hometownher0.github.io/TownFund/?presenter`; after that the plain
+link shows them on that computer (`?presenter=off` turns it off). Visitors
+always see the plain read-only page.
+
+The runner signs with the keys on your computer; nothing is sent to the page
+but "start", the status and the Terminal text. Only the TownFund page or a
+local page may call the runner. Chrome may ask once to allow the page to
+reach devices on your local network: allow it.
 
 Other commands: `reset`, `setup-wallets`, `init-treasury`, `demo-success`,
 `demo-fail`, `status <project>`, `balances`, `recycle` (sends demo USDC back

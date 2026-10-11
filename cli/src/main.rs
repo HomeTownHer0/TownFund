@@ -908,7 +908,8 @@ fn serve(url: String, keypair: String, port: u16, seconds: i64, reset_after: u64
     let listener = TcpListener::bind(("127.0.0.1", port))
         .with_context(|| format!("port {port} is busy; is another runner already open?"))?;
     println!("\n🟢 Runner ready on http://127.0.0.1:{port}");
-    println!("   Open https://hometownher0.github.io/TownFund/?presenter and press Run demo.");
+    println!("   Open https://hometownher0.github.io/TownFund/ and press Run demo.");
+    println!("   (No button? Open it once as …/TownFund/?presenter; this browser remembers.)");
     println!("   (Ctrl+C to stop.)");
 
     struct Shared {

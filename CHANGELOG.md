@@ -9,6 +9,14 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 14:40 · One link for everything
+- The plain link (`hometownher0.github.io/TownFund/`) now shows the Run demo
+  button and Terminal pane on the presenter's computer. Open `?presenter`
+  once in that browser and it is remembered (`?presenter=off` forgets it).
+  Visitors still get the read-only page, and their browsers never try to
+  reach a local runner (which would make Chrome ask them for permission).
+- `serve` now points to the plain link.
+
 ### 14:20 · Consoles stay side by side
 - The program log and Terminal panes now sit side by side, each half the
   width, on any window wider than 640 px (before: they stacked full-width

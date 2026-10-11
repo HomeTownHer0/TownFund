@@ -739,11 +739,22 @@ async function tick() {
 }
 tick();
 
-// ---- presenter: "Run demo" button (only with ?presenter in the address)
+// ---- presenter: "Run demo" button (only on the presenter's computer)
 // It calls the runner on THIS computer (`townfund serve`), which signs with
-// the keys on this computer. Visitors without ?presenter never see it.
-if (q.has("presenter")) {
-  const RUNNER = q.get("runner") || "http://127.0.0.1:8787";
+// the keys on this computer. Visitors never see it.
+// Presenter mode is remembered by this browser: open the page once with
+// ?presenter and the plain link shows the button on this computer from then
+// on. ?presenter=off turns it off again. Visitors never get it (and their
+// browser is never asked to reach a local runner).
+const PRESENTER_KEY = "townfund.presenter";
+const storeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
+if (q.get("presenter") === "off") storeSet(PRESENTER_KEY, null);
+else if (q.has("presenter")) storeSet(PRESENTER_KEY, q.get("runner") || "1");
+const presenter = q.get("presenter") !== "off" && (q.has("presenter") || storeGet(PRESENTER_KEY));
+if (presenter) {
+  const saved = storeGet(PRESENTER_KEY);
+  const RUNNER = q.get("runner") || (saved && saved !== "1" ? saved : "http://127.0.0.1:8787");
   const box = $("#runner"), btn = $("#run-btn"), note = $("#runner-text");
   box.hidden = false;
   const label = { running: "Running…", resetting: "Resetting…" };
