@@ -9,6 +9,11 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 07:40 · Demo run with the owner's titles
+- Full Devnet run: "Pothole on Westheimer" succeeded (9.5 / 0.5 split,
+  badge minted), "Fix Local Park" failed and refunded. README reviewer links
+  now point to this run, so titles match everywhere.
+
 ### 07:45 · Live page: works within Devnet's rate limits
 - Fixed: on the public Devnet server the page showed "Reconnecting" with
   HTTP 429 (too many requests). It sent ~13 requests every 2.5 s, including

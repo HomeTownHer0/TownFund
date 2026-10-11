@@ -54,15 +54,16 @@ can't move money.
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
 
-First full demo run, Oct 10, 2026. Every link is a real Devnet transaction or account:
+Demo run of Oct 11, 2026 ("Pothole on Westheimer" succeeds, "Fix Local Park" fails).
+Every link is a real Devnet transaction or account:
 
 | Step | Link | What to look for |
 |---|---|---|
-| Pledge 10 USDC into escrow | [tx](https://explorer.solana.com/tx/35H91cbvVv9VY4fm75NNn1viwBJUXdVoz9jR9tSHvxHjRE4fncKW1tWoxbDRArGtV5NwUQ8Jn4zh4S3SqeNB6gfh?cluster=devnet) | USDC moves backer → vault (a PDA-owned token account) |
-| Settle (success) | [tx](https://explorer.solana.com/tx/xcfjRbyLZJcXTM65wvRfKT8QBwyLSZXYVy1T3vUeGE8caNc7sx7UU6sg3HmQoRMEesyqkKuwJB8kJhhYCybL2xW?cluster=devnet) | 9.5 USDC → creator, 0.5 USDC → treasury, vault → 0 |
-| Soulbound badge | [NFT](https://explorer.solana.com/address/3M9ngUUCz1iBF7zcQ8RcPikL9xUpikU9nF9aWsmdSN4o?cluster=devnet) | Metaplex Core asset owned by the backer, Permanent Freeze plugin |
-| Settle (failure) | [tx](https://explorer.solana.com/tx/nLNkdzxMRK6uh4goqng6i3rtZPdwMVsbtDQTW9RHXroLs2nBHzw7F7jgt2k85U92VFe4uXK4VFZBnoUjv2WdigT?cluster=devnet) | 5 of 20 USDC raised → status Failed, no money moves |
-| Refund | [tx](https://explorer.solana.com/tx/4dx7i3uEkWAaaYj2Fe6j8ZxQ4p3BQu8MY6FyRPgsXMVmiWRT6iQ7HgbGBqf3Wo4BY2xD1ifxD2SfRabLP51BekGm?cluster=devnet) | 5 USDC back to the backer; pledge receipt closed, rent returned |
+| Pledge 10 USDC into escrow | [tx](https://explorer.solana.com/tx/3GE2pcWW8V9k5LRU9U3oDhuJRB8gwH67n8JX2WKRAsBK2byoguxM4dHZKis8pvESsMMowkY7fxKefVpmJ9UxbW97?cluster=devnet) | USDC moves backer → vault (a PDA-owned token account) |
+| Settle (success) | [tx](https://explorer.solana.com/tx/4ic5eQf3emsp729XR8AXr9L1M63197BXJDXChkGag5LJREhy55SUU2QbevCLB2BuKyivDcobC5WBC1fFdvr7sQ8n?cluster=devnet) | 9.5 USDC → creator, 0.5 USDC → treasury, vault → 0 |
+| Soulbound badge | [NFT](https://explorer.solana.com/address/EKjbBup2erEZbWqFxRcG4FXF9wdYqav5aDAbWNoFFsNZ?cluster=devnet) | Metaplex Core asset "TownFund Backer: Pothole on Westheimer", owned by the backer, Permanent Freeze plugin |
+| Settle (failure) | [tx](https://explorer.solana.com/tx/45GYQyAcMyEgwygw1CPmLcrBdmcT2EPvkPPdcTahxL6TfqziBSAyVokNYk9ubMQf5hxRQxgvPMkaQi3754pNCQWS?cluster=devnet) | 5 of 20 USDC raised → status Failed, no money moves |
+| Refund | [tx](https://explorer.solana.com/tx/66uuFZTt4b2AmRQ78jLpzmTK3FqJTuQ81w1wjva5TpjTym2GeKVUuuQTR4mqr7uHHKZpVa2Yr9MLJndFEh4HHH4s?cluster=devnet) | 5 USDC back to the backer; pledge receipt closed, rent returned |
 
 ### Instructions
 
