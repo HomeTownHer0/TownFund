@@ -9,6 +9,11 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 14:20 · Consoles stay side by side
+- The program log and Terminal panes now sit side by side, each half the
+  width, on any window wider than 640 px (before: they stacked full-width
+  below 900 px). Phones still stack them.
+
 ### 14:00 · Live consoles under the map
 - The "Latest move" bar is replaced by a **TownFund program log** pane:
   every transaction, as it lands, prints a summary line (who paid whom, tx
