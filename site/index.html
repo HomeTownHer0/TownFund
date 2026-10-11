@@ -377,7 +377,7 @@ function render(st) {
   if (prev) {
     const d = (k) => b[k] - prev.balances[k];
     // compare a vault only with the same project's vault last time
-    const vd = (now, before) => (now && before && now.address === before.address ? now.vaultBalance - before.vaultBalance : now && !before ? now.vaultBalance : 0);
+    const vd = (now, before) => (!now ? 0 : before && now.address === before.address ? now.vaultBalance - before.vaultBalance : now.vaultBalance);
     const v1 = vd(st.success, prev.success);
     const v2 = vd(st.community, prev.community);
     if (v1 > 0) coin("p-b1-v1", v1);

@@ -16,6 +16,13 @@ the program (verified: same source, same 409,488-byte build).
 - Now it asks one cheap question every 2.5 s ("any new TownFund
   transaction?") and reloads only when something happened, or every 20 s,
   using 1 account search instead of 5. About 16 requests per 10 s.
+- Root cause found by testing from a real browser: the public Devnet
+  server refuses several calls of the same kind in one request ("Too many
+  requests for a specific RPC call"). Wallet token accounts are now looked
+  up once, one at a time; every refresh reads all six balances with a single
+  getMultipleAccounts. Feed transactions are fetched one at a time.
+- Files are version-stamped on publish, so a browser can't mix a cached
+  old file with a new one.
 - If Devnet still says "slow down", the page backs off (5–30 s) and says
   "Devnet is busy, retrying in N s".
 - Fixed the published link: GitHub Pages paths are case-sensitive

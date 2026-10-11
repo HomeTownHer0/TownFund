@@ -112,10 +112,6 @@ export async function rpcBatch(url, calls, lenient = false) {
   });
 }
 
-const usdcOf = (r) => {
-  const accts = r?.value || [];
-  return accts.reduce((sum, a) => sum + Number(a.account.data.parsed.info.tokenAmount.amount), 0);
-};
 
 // ---------------------------------------------------------------- state
 /** One snapshot of everything the page shows. */
@@ -136,20 +132,34 @@ const DISC_BYTES = {
 };
 
 /**
- * One full snapshot of everything the page shows, in 2 HTTP requests:
- *  1. wallet + treasury balances, ALL TownFund accounts (one
- *     getProgramAccounts, no filters), and the slot
- *  2. the chain clock and the two shown vaults' balances
+ * Each wallet's USDC token account, looked up once and remembered.
+ * Devnet's public server refuses several getTokenAccountsByOwner calls at
+ * the same time, so these lookups run one after another.
+ */
+const tokenAccountOf = new Map();
+async function resolveTokenAccounts(cfg) {
+  for (const owner of Object.values(cfg.wallets)) {
+    if (tokenAccountOf.get(owner)) continue;
+    const [r] = await rpcBatch(cfg.rpc, [["getTokenAccountsByOwner", [owner, { mint: cfg.usdcMint }, { encoding: "base64", commitment: "confirmed" }]]]);
+    const found = r?.value?.[0]?.pubkey;
+    if (found) tokenAccountOf.set(owner, found);
+  }
+}
+
+/** USDC amount held in a jsonParsed token account (0 if it doesn't exist). */
+const amountOf = (acct) => Number(acct?.data?.parsed?.info?.tokenAmount?.amount ?? 0);
+
+/**
+ * One full snapshot of everything the page shows. Every call in a request
+ * is a different method, which keeps the public server happy:
+ *  1. ALL TownFund accounts (one getProgramAccounts) and the slot
+ *  2. every balance at once (getMultipleAccounts) and the chain clock
  */
 export async function fetchState(cfg = CONFIG) {
   const w = cfg.wallets;
-  const tokenByOwner = (owner) => ["getTokenAccountsByOwner", [owner, { mint: cfg.usdcMint }, { encoding: "jsonParsed", commitment: "confirmed" }]];
+  await resolveTokenAccounts(cfg);
 
-  const [c, b1, b2, treasury, all, slot] = await rpcBatch(cfg.rpc, [
-    tokenByOwner(w.creator),
-    tokenByOwner(w.backer1),
-    tokenByOwner(w.backer2),
-    ["getTokenAccountBalance", [cfg.treasuryVault, { commitment: "confirmed" }]],
+  const [all, slot] = await rpcBatch(cfg.rpc, [
     ["getProgramAccounts", [cfg.program, { encoding: "base64", commitment: "confirmed" }]],
     ["getSlot", [{ commitment: "confirmed" }]],
   ], true);
@@ -173,20 +183,31 @@ export async function fetchState(cfg = CONFIG) {
     p.badges = badges.filter((x) => x.project === p.address);
   }
 
-  const res = await rpcBatch(cfg.rpc, [
+  // Every balance in one call. Unknown token accounts use the program ID
+  // as a harmless placeholder (it is never a token account, so it reads 0).
+  const keys = [
+    tokenAccountOf.get(w.creator) || cfg.program,
+    tokenAccountOf.get(w.backer1) || cfg.program,
+    tokenAccountOf.get(w.backer2) || cfg.program,
+    cfg.treasuryVault,
+    ...shown.map((p) => p.vault),
+  ];
+  const [multi, chainTime] = await rpcBatch(cfg.rpc, [
+    ["getMultipleAccounts", [keys, { encoding: "jsonParsed", commitment: "confirmed" }]],
     ["getBlockTime", [slot]],
-    ...shown.map((p) => ["getTokenAccountBalance", [p.vault, { commitment: "confirmed" }]]),
   ], true);
-  shown.forEach((p, i) => { p.vaultBalance = Number(res[1 + i]?.value?.amount ?? 0); });
+  if (multi == null) throw new Error("Devnet did not answer");
+  const v = multi.value;
+  shown.forEach((p, i) => { p.vaultBalance = amountOf(v[4 + i]); });
 
   return {
     fetchedAt: Date.now(),
-    chainTime: res[0],
+    chainTime,
     balances: {
-      creator: usdcOf(c),
-      backer1: usdcOf(b1),
-      backer2: usdcOf(b2),
-      treasury: Number(treasury?.value?.amount ?? 0),
+      creator: amountOf(v[0]),
+      backer1: amountOf(v[1]),
+      backer2: amountOf(v[2]),
+      treasury: amountOf(v[3]),
     },
     success,
     community,
@@ -215,9 +236,10 @@ export async function fetchActivity(cache, labels, cfg = CONFIG, limit = 12) {
   // Look up at most 4 new transactions per call, so the public RPC isn't
   // flooded; the rest are picked up on the next refresh.
   const missing = sigs.filter((s) => !cache.has(s.signature)).slice(0, 4);
-  if (missing.length) {
-    const txs = await rpcBatch(cfg.rpc, missing.map((s) => ["getTransaction", [s.signature, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "confirmed" }]]), true);
-    missing.forEach((s, i) => { if (txs[i]) cache.set(s.signature, describeTx(s, txs[i], labels, cfg)); });
+  // One at a time: the public server refuses several of the same call at once.
+  for (const s of missing) {
+    const [tx] = await rpcBatch(cfg.rpc, [["getTransaction", [s.signature, { encoding: "json", maxSupportedTransactionVersion: 0, commitment: "confirmed" }]]], true);
+    if (tx) cache.set(s.signature, describeTx(s, tx, labels, cfg));
   }
   const items = sigs.map((s) => cache.get(s.signature)).filter(Boolean);
   items.complete = sigs.every((s) => cache.has(s.signature));
