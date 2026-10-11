@@ -14,6 +14,7 @@ in Solana School Fall 2026
 
 > **Status:** V1 program complete (62 tests), live on Devnet, and the full
 > demo has run successfully on Devnet (Oct 10, 2026).
+> Every revision is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works (V1, "Creators + Backers")
 
