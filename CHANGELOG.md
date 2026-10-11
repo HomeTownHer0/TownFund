@@ -9,6 +9,11 @@ the program (verified: same source, same 409,488-byte build).
 
 ## 2026-10-11
 
+### 10:10 · TIP starts at 0 when the page opens
+- TIP now counts only tips made after the page was opened (and in the
+  current run), so it reads 0 immediately on load instead of showing the
+  previous run's total. Verified: open after a finished run → 0 → 1 → 2.
+
 ### 09:45 · Cleaner boxes; TIP resets each run
 - Removed the green/red "change since this run" tags (+10.5, −11, …) from
   every box, and the legend line about them.

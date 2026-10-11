@@ -504,6 +504,7 @@ setInterval(() => {
 // ---- activity feed
 const txCache = new Map();
 let tipRun = { start: null, max: 0 };
+let pageOpenedAt = null; // chain time (unix seconds) when this page first loaded data
 const seen = new Set();
 async function refreshFeed() {
   if (!last) return true;
@@ -513,9 +514,10 @@ async function refreshFeed() {
   if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
   const items = await fetchActivity(txCache, labels, cfg, 12);
-  // TIP box: total tipped to the creator since this run's first project opened.
-  // A run starts when its Individual project opens (the first step of every run).
-  const runStart = (last.success || last.community)?.createdAt ?? 0;
+  // TIP box. Count tips made after the page was opened AND in the current run
+  // (a run starts when its Individual project opens). So TIP reads 0 as
+  // soon as the page loads, and drops back to 0 when a new run starts.
+  const runStart = Math.max(pageOpenedAt ?? Infinity, (last.success || last.community)?.createdAt ?? 0);
   const tipped = items
     .filter((a) => a.name === "Tip" && a.ok && a.time >= runStart)
     .reduce((sum, a) => sum + (a.moves.find((m) => (m.who === "Creator 1" || m.who === "Creator 2") && m.amount > 0)?.amount || 0), 0);
@@ -562,6 +564,7 @@ async function tick() {
     if (changed || Date.now() - lastFull > FULL_EVERY_MS || !last) {
       const st = await fetchState(cfg);
       if (st.chainTime) chainOffset = st.chainTime - st.fetchedAt / 1000;
+      if (pageOpenedAt == null && st.chainTime) pageOpenedAt = st.chainTime;
       last = st;
       lastFull = Date.now();
       render(st);
