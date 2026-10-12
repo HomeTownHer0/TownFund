@@ -46,14 +46,13 @@ in Solana School Fall 2026
 
 **[hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)**: a
 read-only page that shows every wallet, both project vaults and the town
-treasury straight from Devnet, updating every few seconds. Open it, then run
-the demo (below): coins move along the money map, and each box changes the
-moment its coin arrives. Under the map, the **TownFund program log** prints
+treasury straight from Devnet, updating every few seconds. While the demo
+runs, coins move along the money map and each box changes the moment its
+coin arrives. Under the map, the **TownFund program log** prints
 every transaction as it lands: a one-line summary (who paid whom), then the
 program's own log lines as Solana recorded them (instruction, token
 transfer, compute units used, success), slot and fee. Each project's steps
-tick off as they happen. Nothing to install; it
-can't move money.
+tick off as they happen. Nothing to install; viewing it can't move money.
 
 On the map, **TIP** is a junction, not an account: on-chain a tip goes
 straight from the backer to the creator. The coin passes through TIP so the
@@ -164,7 +163,7 @@ mutation-checked: deliberately breaking the rule made its test fail.
 | Demo tool | `townfund` CLI: full Demo Day story with Explorer links | ✅ |
 | Devnet run | Full demo on Devnet (links above) | ✅ |
 | Live page | Read-only status page on GitHub Pages | ✅ |
-| Presenter | Run demo button on the live page, automatic reset after each run | ✅ |
+| Run demo button | Demo starts from the live page and resets itself after each run | ✅ |
 | Demo Day | October 16, 2026 | ⏳ |
 | Roadmap | Treasury door, milestones, website | after Oct 16 |
 
@@ -200,53 +199,27 @@ cargo run -p townfund-cli -- demo
 One command runs the Demo Day story against the live program and prints an
 Explorer link for every step:
 
-1. Creates (once) and funds four demo wallets in `~/.config/solana/townfund-demo/`
-   (creator, creator2, backer1, backer2) from your main wallet: SOL for fees, USDC for
-   pledges and tips. Their public addresses are written to
-   `demo-wallets.json` (git-ignored)
+1. Funds four demo wallets (Creator 1, Creator 2, Backer 1, Backer 2) from
+   the main wallet: SOL for fees, USDC for pledges and tips
 2. **"Pothole on Westheimer"** (Creator-only, opened by Creator 1) succeeds:
-   Backer 1 pledges 10 USDC into escrow and tips Creator 1 1 USDC, deadline passes, settle 95/5,
-   soulbound badge to Backer 1
+   Backer 1 pledges 10 USDC into escrow and tips Creator 1 1 USDC, deadline
+   passes, settle 95/5, soulbound badge to Backer 1
 3. **"Fix Local Park"** (Community, opened by Creator 2) fails: Backer 2
    pledges 5 of 20 USDC and tips Creator 2 1 USDC, deadline passes, settle
    marks it Failed, Backer 2 gets the 5 back, and the tip stays with Creator 2
    (tips are not refundable)
-Each step pauses 3 s (`--pace N`, `0` for none) so the live page can show
-every move before the next one starts; a full run takes about a minute.
+4. Resets about 15 s later: creators emptied, backers refilled, ready for the
+   next run. The treasury keeps its fees (V1 has no way to withdraw them)
 
-4. **Resets** 15 s after it finishes (`--reset-after N` to change, `0` to
-   keep the final state): creators' USDC goes back to your main wallet and
-   both backers are topped up to pledge + tip (11 and 6 USDC), ready for the
-   next run. The treasury keeps its fees: V1 has no way to withdraw them.
+Each step pauses 3 s so the live page can show every move; a run takes
+about a minute.
 
-### Run it from the live page (Demo Day)
-
-```bash
-cargo run -p townfund-cli -- serve
-```
-
-Starts a small runner on `http://127.0.0.1:8787` (this computer only). Open
-the live page, **[hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)**,
-and press **Run demo**: the button shows Running…, Resetting…, then Run
-demo again. A **Terminal** pane next to the program log shows the runner's
-output line by line, the same text as in your Terminal window, with each
-transaction ID linking to Explorer.
-
-The page contacts the runner only after the button is clicked on that
-computer; from then on it remembers and shows the runner's state as soon as
-the page opens. On a computer without the runner, the button just explains
-that the demo runs from the presenter's computer, so visitors can watch but
-can't start anything.
-
-The runner signs with the keys on your computer; nothing is sent to the page
-but "start", the status and the Terminal text. Only the TownFund page or a
-local page may call the runner. Chrome may ask once to allow the page to
-reach devices on your local network: allow it.
-
-Other commands: `reset`, `setup-wallets`, `init-treasury`, `demo-success`,
-`demo-fail`, `status <project>`, `balances`, `recycle` (sends demo USDC back
-to your main wallet). The first run needs ~17 USDC in the main wallet; after
-that each run only uses up the 0.5 USDC treasury fee.
+On Demo Day the same run starts from the **Run demo** button on the live
+page: `cargo run -p townfund-cli -- serve` starts a small runner on the
+presenter's computer, which signs every transaction there. A Terminal pane
+on the page shows the runner's output beside the program log. On any other
+computer the button only explains that the demo runs from the presenter's
+computer.
 
 ## Backer badge
 
@@ -258,9 +231,9 @@ project; never for failed projects.
 
 ## Safety
 
-- **Never commit a keypair.** `.gitignore` blocks `*-keypair.json`, `id.json`, `.env`.
-  Demo wallet keys live outside the repo in `~/.config/solana/townfund-demo/`.
-- The Run demo button can't move money by itself: it asks the runner on the
-  clicking computer (`serve`, reachable only from that computer) to
-  start the demo, and the runner signs with keys that never leave it.
+- **No keys in the repo.** `.gitignore` blocks keypair files; all wallet
+  keys stay on the owner's computer.
+- The Run demo button can't move money by itself: only the runner on the
+  presenter's computer can start the demo, and it signs with keys that
+  never leave that computer.
 - Devnet only. No mainnet, no real money.
