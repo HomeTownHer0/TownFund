@@ -202,7 +202,7 @@
     </div>
     <div class="right">
       <div class="runner" id="runner" hidden>
-        <button type="button" id="run-btn" disabled>Run demo</button>
+        <button type="button" id="run-btn">Run demo</button>
         <span id="runner-text"></span>
       </div>
       <div class="live" id="live" role="status"><span class="dot"></span><span id="live-text">Connecting to Devnet…</span></div>
@@ -753,26 +753,22 @@ async function tick() {
 }
 tick();
 
-// ---- presenter: "Run demo" button (only on the presenter's computer)
-// It calls the runner on THIS computer (`townfund serve`), which signs with
-// the keys on this computer. Visitors never see it.
-// Presenter mode is remembered by this browser: open the page once with
-// ?presenter and the plain link shows the button on this computer from then
-// on. ?presenter=off turns it off again. Visitors never get it (and their
-// browser is never asked to reach a local runner).
-const PRESENTER_KEY = "townfund.presenter";
+// ---- "Run demo" button
+// It asks the runner on THIS computer (`townfund serve`) to start the demo;
+// the runner signs with the keys on that computer. The page contacts the
+// runner only after the button is clicked once on this computer (then it
+// remembers, and shows the runner's state and Terminal output on load).
+// Visitors' browsers are never asked to reach a local runner just by
+// opening the page.
+const RUNNER_KEY = "townfund.presenter";
 const storeGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} };
-if (q.get("presenter") === "off") storeSet(PRESENTER_KEY, null);
-else if (q.has("presenter")) storeSet(PRESENTER_KEY, q.get("runner") || "1");
-const presenter = q.get("presenter") !== "off" && (q.has("presenter") || storeGet(PRESENTER_KEY));
-if (presenter) {
-  const saved = storeGet(PRESENTER_KEY);
-  const RUNNER = q.get("runner") || (saved && saved !== "1" ? saved : "http://127.0.0.1:8787");
+{
+  const RUNNER = q.get("runner") || "http://127.0.0.1:8787";
   const box = $("#runner"), btn = $("#run-btn"), note = $("#runner-text");
   box.hidden = false;
   const label = { running: "Running…", resetting: "Resetting…" };
-  let prevState = "idle", nextLine = null;
+  let prevState = "idle", nextLine = null, polling = false;
   const runnerLog = makeConsole($("#runner-log"), { gap: 25 });
   // One Terminal line -> console line: colors, and Explorer URLs as short links.
   const termLine = (raw) => {
@@ -807,19 +803,34 @@ if (presenter) {
       btn.textContent = label[j.state] || "Run demo";
       note.textContent = j.error ? `Last run stopped: ${j.error.slice(0, 120)}` : "";
     } catch {
-      btn.disabled = true;
+      // runner stopped: the button stays clickable (a click tries again)
+      prevState = "idle";
+      btn.disabled = false;
       btn.textContent = "Run demo";
       note.textContent = "Runner not found. In Terminal: cargo run -p townfund-cli -- serve";
     }
     setTimeout(pollRunner, prevState === "idle" ? 2000 : 400);
   }
+  const startPolling = () => { if (!polling) { polling = true; pollRunner(); } };
   btn.addEventListener("click", async () => {
     btn.disabled = true;
     btn.textContent = "Starting…";
-    prevState = "running"; // poll faster right away
-    try { await fetch(RUNNER + "/run", { method: "POST" }); } catch { /* next poll shows the problem */ }
+    note.textContent = "";
+    try {
+      await fetch(RUNNER + "/run", { method: "POST" });
+      storeSet(RUNNER_KEY, "1"); // this computer has the runner: remember it
+      prevState = "running"; // poll faster right away
+      startPolling();
+    } catch {
+      btn.disabled = false;
+      btn.textContent = "Run demo";
+      note.textContent = storeGet(RUNNER_KEY)
+        ? "Runner not found. In Terminal: cargo run -p townfund-cli -- serve"
+        : "The demo runs from the presenter's computer. Watch the map: every move shows here live.";
+    }
   });
-  pollRunner();
+  // On the presenter's computer, show the runner's state and Terminal right away.
+  if (storeGet(RUNNER_KEY)) startPolling();
 }
 </script>
 </body>

@@ -7,6 +7,20 @@ The program deployed on Devnet (`FdaMK3…PXrv`) was built from commit
 **b86740d**. Later entries changed only the demo tool, tests and docs, not
 the program (verified: same source, same 409,488-byte build).
 
+## 2026-10-12
+
+### 01:20 · One link: the button is on the main page
+- The Run demo button is on the plain link for everyone; the `?presenter`
+  link is gone (owner's call).
+- The page reaches the runner only after the button is clicked, then
+  remembers that computer and shows the runner's state and Terminal pane on
+  load. Visitors who click get a note that the demo runs from the
+  presenter's computer; opening the page never makes their browser contact a
+  local runner.
+- Verified on a local chain: visitor (0 runner calls before clicking, note
+  on click), presenter (click starts the demo, Terminal pane appears, still
+  there after reload).
+
 ## 2026-10-11
 
 ### 16:20 · Map keeps pace with the Terminal

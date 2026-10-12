@@ -226,17 +226,17 @@ cargo run -p townfund-cli -- serve
 ```
 
 Starts a small runner on `http://127.0.0.1:8787` (this computer only). Open
-the live page and press **Run demo**: the button shows Running…,
-Resetting…, then Run demo again. A **Terminal** pane next to the program log
-shows the runner's output line by line, the same text as in your Terminal
-window, with each transaction ID linking to Explorer.
+the live page, **[hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)**,
+and press **Run demo**: the button shows Running…, Resetting…, then Run
+demo again. A **Terminal** pane next to the program log shows the runner's
+output line by line, the same text as in your Terminal window, with each
+transaction ID linking to Explorer.
 
-The button and Terminal pane appear only on the presenter's computer. Turn
-that on once per browser by opening
-**[hometownher0.github.io/TownFund/?presenter](https://hometownher0.github.io/TownFund/?presenter)**;
-after that the plain
-link shows them on that computer (`?presenter=off` turns it off). Visitors
-always see the plain read-only page.
+The page contacts the runner only after the button is clicked on that
+computer; from then on it remembers and shows the runner's state as soon as
+the page opens. On a computer without the runner, the button just explains
+that the demo runs from the presenter's computer, so visitors can watch but
+can't start anything.
 
 The runner signs with the keys on your computer; nothing is sent to the page
 but "start", the status and the Terminal text. Only the TownFund page or a
@@ -261,6 +261,6 @@ project; never for failed projects.
 - **Never commit a keypair.** `.gitignore` blocks `*-keypair.json`, `id.json`, `.env`.
   Demo wallet keys live outside the repo in `~/.config/solana/townfund-demo/`.
 - The Run demo button can't move money by itself: it asks the runner on the
-  presenter's own computer (`serve`, reachable only from that computer) to
+  clicking computer (`serve`, reachable only from that computer) to
   start the demo, and the runner signs with keys that never leave it.
 - Devnet only. No mainnet, no real money.
