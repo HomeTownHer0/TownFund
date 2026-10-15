@@ -15,7 +15,6 @@ in Solana School Fall 2026
 > **Status:** V1 program complete (62 tests), live on Devnet, and the full
 > demo runs on Devnet from a button on the [live page](https://hometownher0.github.io/TownFund/),
 > resetting itself after each run (Oct 11, 2026).
-> Every revision is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works (V1, "Creators + Backers")
 
