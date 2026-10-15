@@ -35,8 +35,6 @@ The rules:
   target is at least 10 USDC and it runs 1 to 60 days. (The Devnet demo
   build also allows 10 seconds to 10 minutes, so a whole project fits in a
   live demo.)
-- On a Community project your vote is locked in with your first pledge.
-  Topping up doesn't change it.
 - After the deadline, anyone can trigger **settle**. If the target was hit,
   the vault pays out once, 95% to the payee and 5% to the treasury. The fee
   rounds down so nothing is left in the vault, and going over the target is
