@@ -67,12 +67,6 @@ The rules:
 - After a project succeeds, each backer can get a **soulbound badge**, an
   NFT that can never be sold or transferred.
 
-If you work around machines, think of the vault as a cell with an
-interlocked door. The program is the safety PLC: the door only opens for
-"target met after the deadline" (pay out 95/5) or "target missed or
-cancelled" (refund). There's no override button, and every cycle is logged
-on-chain.
-
 ## For reviewers
 
 ### Watch it live
