@@ -27,9 +27,7 @@ after each run (Oct 11, 2026).
 There are two kinds of projects:
 
 - **Creator-only:** the person who started the project gets paid.
-- **Community:** backers vote on who does the job. The creator lists 2 to 5
-  contractors, each backer gets one vote with their first pledge, and the
-  winner gets paid. Ties go to the lowest-numbered contractor.
+- **Community:** backers vote on who does the job.
 
 The rules:
 
