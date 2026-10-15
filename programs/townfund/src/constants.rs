@@ -55,6 +55,6 @@ pub const MAX_TITLE_LEN: usize = 64; // bytes
 pub const MIN_CANDIDATES: usize = 2;
 pub const MAX_CANDIDATES: usize = 5;
 
-/// Layout version stamped on every stored account (D-d).
+/// Layout version stamped on every stored account.
 #[constant]
 pub const ACCOUNT_VERSION: u8 = 1;

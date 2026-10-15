@@ -1,6 +1,6 @@
 //! refund: a backer takes back 100% of their pledge from a failed or
 //! cancelled project. No fee. Their receipt is closed and its rent goes
-//! back to them too (D-b). A closed receipt can't be refunded twice.
+//! back to them too. A closed receipt can't be refunded twice.
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 

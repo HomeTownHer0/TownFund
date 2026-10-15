@@ -117,7 +117,7 @@ fn demo_project_fails_and_every_backer_gets_100_percent_back() {
     assert_eq!(w.bench.balance(alice.1), 100 * USDC);
     assert_eq!(w.bench.balance(bob.1), 100 * USDC);
     assert_eq!(w.vault(), 0);
-    // Receipts closed, rent returned (D-b).
+    // Receipts closed, rent returned.
     assert!(w.bench.svm.get_account(&pledge_address(&w.project, &alice.0.pubkey())).is_none());
 }
 

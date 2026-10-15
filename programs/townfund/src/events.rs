@@ -1,4 +1,4 @@
-//! Machine log: events the website reads to show history (D-d).
+//! Machine log: events the website reads to show history.
 use anchor_lang::prelude::*;
 
 use crate::state::ProjectKind;

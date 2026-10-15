@@ -27,7 +27,7 @@ pub enum ProjectStatus {
 #[account]
 #[derive(InitSpace, Debug)]
 pub struct Project {
-    /// Layout version (D-d). Starts at 1.
+    /// Layout version. Starts at 1.
     pub version: u8,
     /// PDA bump for this account.
     pub bump: u8,
@@ -60,7 +60,7 @@ pub struct Project {
     pub candidates: Vec<Pubkey>,
     /// Vote count per candidate index.
     pub votes: [u32; 5],
-    /// Spare room for future fields (D-d). Always zero for now.
+    /// Spare room for future fields. Always zero for now.
     pub reserved: [u8; 64],
 }
 
@@ -77,11 +77,11 @@ pub struct Treasury {
     /// Token account holding fees, at ["treasury_vault"].
     pub vault: Pubkey,
     /// Reserved for the future "door" (multisig or vote) that can spend
-    /// treasury funds (D-f). Always None in V1: nothing can spend.
+    /// treasury funds. Always None in V1: nothing can spend.
     pub door_authority: Option<Pubkey>,
     /// Lifetime fees received (base units).
     pub total_fees: u64,
-    /// Spare room (D-d).
+    /// Spare room.
     pub reserved: [u8; 64],
 }
 
@@ -99,7 +99,7 @@ pub struct Pledge {
     pub vote: Option<u8>,
     /// Set when the backer has taken their refund.
     pub refunded: bool,
-    /// Spare room (D-d).
+    /// Spare room.
     pub reserved: [u8; 32],
 }
 
@@ -140,6 +140,6 @@ pub struct Badge {
     pub backer: Pubkey,
     /// The Metaplex Core asset (the NFT itself).
     pub asset: Pubkey,
-    /// Spare room (D-d).
+    /// Spare room.
     pub reserved: [u8; 32],
 }
