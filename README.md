@@ -2,25 +2,43 @@
 
 [![build-and-test](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml/badge.svg)](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml)
 
-TownFund is a community fundraiser on Solana, and the first piece of a
-bigger idea: a community job board where neighbors can fund local work and
-hire each other to do it.
-
-Here's how it works. People pledge USDC to a project, and the money sits in
-an escrow vault until the deadline. If the project hits its target, the
-vault pays out: 95% to whoever does the work, 5% to a town treasury. If it
-misses, everyone gets 100% of their money back. Nobody holds the money in
-between, me included. The program has no instruction that moves escrowed
-money any other way (the one caveat is the upgrade authority, covered under
-known limitations).
+TownFund is a Solana-native platform that replaces outdated temp-agency
+friction with USDC escrow and digital approvals, so workers can get paid the
+same day they finish short-term jobs. It also lets communities crowdfund
+local needs and routes the money directly to workers, with a 5% fee going
+to a town treasury that will sit in a Jupiter USDC yield vault. It's
+intended to be built as a compliant US marketplace that uses Solana for
+fast, low-cost settlement rather than pure decentralization.
 
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 for Solana School, Fall 2026.
+
+## What V1 does
+
+V1 is the money layer everything else sits on: the escrow. People pledge
+USDC to a project, and the money sits in an escrow vault until the
+deadline. If the project hits its target, the vault pays out: 95% to
+whoever does the work, 5% to the town treasury. If it misses, everyone gets
+100% of their money back. Nobody holds the money in between, me included.
+The program has no instruction that moves escrowed money any other way (the
+one caveat is the upgrade authority, covered under known limitations).
 
 **Status:** V1 is done. The program has 62 passing tests, it's deployed on
 Devnet, and the full demo runs on Devnet from a button on the
 [live page](https://hometownher0.github.io/TownFund/), resetting itself
 after each run (Oct 11, 2026).
+
+### Built now vs. next
+
+| | Status |
+|---|---|
+| USDC escrow on Solana | Built, live on Devnet |
+| Communities crowdfund local needs | Built (Creator-only and Community projects) |
+| Money goes straight to the worker | Built: a Community project pays the contractor the backers picked |
+| 5% fee to a town treasury | Built (the 95/5 split) |
+| Treasury earns yield in a Jupiter USDC vault | Next. Fees sit in the treasury vault for now, and the program already saves room for the "door" this needs |
+| Short-term jobs with digital approval and same-day pay | Next. This is the milestones step: the job is escrowed, the hirer approves, the worker gets paid |
+| Compliant US marketplace | Long-term. That's a business and legal track (identity checks, money-transmission rules), not code |
 
 ## How it works
 
@@ -199,7 +217,7 @@ These are the next things to fix, not hidden bugs:
 - [x] Live status page on GitHub Pages
 - [x] Run demo button that starts the demo from the page and resets after each run
 - [ ] Demo Day
-- [ ] After that: the treasury door, milestones, and the website
+- [ ] After that: the treasury door and Jupiter yield vault, short-term jobs with approvals and same-day pay, and the website
 
 ## Deployment
 
