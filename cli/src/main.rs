@@ -83,13 +83,15 @@ enum Cmd {
     SetupWallets,
     /// Create TownFund's treasury (once per program; safe to rerun)
     InitTreasury,
-    /// Individual project: pledge + tip -> settle 95/5 -> soulbound badge
+    /// Job ("Landscaping project"): client pays into escrow + tip ->
+    /// settle 95/5 -> soulbound badge
     /// (run setup-wallets first)
     DemoSuccess {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
     },
-    /// Community project: under target -> fails -> backer refunded 100%
+    /// Community project ("Pothole on Westheimer"): under target -> fails ->
+    /// backer refunded 100%
     /// (run setup-wallets first)
     DemoFail {
         #[arg(long, default_value_t = 20)]
@@ -101,8 +103,8 @@ enum Cmd {
     Balances,
     /// Send the demo wallets' USDC back to your main wallet (for reruns)
     Recycle,
-    /// Reset for a new run: creators back to 0, backers refilled to
-    /// pledge + tip (Backer 1: 11 USDC, Backer 2: 6 USDC)
+    /// Reset for a new run: Contractor 1099 and Creator 2 back to 0, Client
+    /// and Backer refilled (Client: 11 USDC, Backer: 6 USDC)
     Reset,
 }
 
@@ -433,21 +435,23 @@ fn demo_wallet(name: &str) -> Result<Keypair> {
 }
 
 struct Wallets {
-    /// Opens "Pothole on Westheimer" (Individual).
+    /// "Contractor 1099": opens the "Landscaping project" job.
     creator: Keypair,
-    /// Opens "Fix Local Park" (Community).
+    /// "Creator 2": opens "Pothole on Westheimer" (Community).
     creator2: Keypair,
+    /// "Client": pays for the job.
     backer1: Keypair,
+    /// "Backer": chips in to the pothole crowdfund.
     backer2: Keypair,
 }
 
 impl Wallets {
     fn named(&self) -> [(&'static str, &Keypair); 4] {
         [
-            ("creator", &self.creator),
-            ("creator2", &self.creator2),
-            ("backer1", &self.backer1),
-            ("backer2", &self.backer2),
+            ("Contractor 1099", &self.creator),
+            ("Creator 2", &self.creator2),
+            ("Client", &self.backer1),
+            ("Backer", &self.backer2),
         ]
     }
 }
@@ -502,7 +506,7 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
     println!("\n━━ Demo wallets ━━");
     let w = wallets()?;
     let main = app.main.pubkey();
-    // Each backer pledges and tips 1 USDC: backer1 10 + 1, backer2 5 + 1.
+    // Client pays 10 + tips 1; Backer pledges 5 + tips 1.
     let want = [
         (&w.creator, 0u64),
         (&w.creator2, 0),
@@ -543,12 +547,12 @@ fn setup_wallets(app: &App) -> Result<Wallets> {
             &[&app.main],
         )?;
     } else {
-        println!("  ✅ already loaded: backers have pledge + tip ready");
+        println!("  ✅ already loaded: Client and Backer have payment + tip ready");
     }
     for (name, k) in w.named() {
         let who = k.pubkey();
         println!(
-            "  {name:8} {who}  {} | {}",
+            "  {name:15} {who}  {} | {}",
             fmt_sol(app.sol(&who)),
             fmt_usdc(app.usdc(&who))
         );
@@ -596,15 +600,15 @@ fn wait_for_deadline(app: &App, deadline: i64) -> Result<()> {
 }
 
 fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
-    println!("\n━━ Story 1: Individual project SUCCEEDS ━━");
+    println!("\n━━ Story 1: Job gets paid ━━");
     let creator = w.creator.pubkey();
     let backer = w.backer1.pubkey();
     let id = new_project_id();
     let project = project_address(&creator, id);
-    let title = "Pothole on Westheimer";
+    let title = "Landscaping project";
 
     app.send(
-        &format!("Creator 1 opens \"{title}\": target 10 USDC, {seconds}s"),
+        &format!("Contractor 1099 opens \"{title}\": target 10 USDC, {seconds}s"),
         &[create_project_ix(
             &creator,
             id,
@@ -623,7 +627,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let deadline = app.project(&project)?.deadline;
 
     app.send(
-        "Backer1 pledges 10 USDC → vault (escrow)",
+        "Client pays 10 USDC → vault (escrow)",
         &[pledge_ix(&backer, &project, 10 * USDC, None)],
         &[&w.backer1],
     )?;
@@ -634,7 +638,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
         app.link("address", &vault.to_string())
     );
     app.send(
-        "Backer1 tips Creator 1 1 USDC (direct, no fee)",
+        "Client tips Contractor 1099 1 USDC (direct, no fee)",
         &[tip_ix(&backer, &project, &creator, USDC)],
         &[&w.backer1],
     )?;
@@ -646,10 +650,10 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
         app,
         &project,
         Some(&creator),
-        "Settle: 95% → Creator 1, 5% → treasury",
+        "Settle: 95% → Contractor 1099, 5% → treasury",
     )?;
     println!(
-        "     Creator 1 +{} | treasury +{} | vault now {}",
+        "     Contractor 1099 +{} | treasury +{} | vault now {}",
         fmt_usdc(app.usdc(&creator) - creator_before),
         fmt_usdc(app.usdc_at(&treasury_vault_address()) - treasury_before),
         fmt_usdc(app.usdc_at(&vault)),
@@ -657,7 +661,7 @@ fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 
     let asset = Keypair::new();
     app.send(
-        "Mint soulbound backer badge → backer1",
+        "Mint soulbound backer badge → Client",
         &[badge_ix(
             &app.main.pubkey(),
             &project,
@@ -681,7 +685,7 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let backer = w.backer2.pubkey();
     let id = new_project_id() + 1;
     let project = project_address(&creator, id);
-    let title = "Fix Local Park";
+    let title = "Pothole on Westheimer";
     let candidates = vec![Keypair::new().pubkey(), Keypair::new().pubkey()];
 
     app.send(
@@ -705,17 +709,17 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
 
     let before = app.usdc(&backer);
     app.send(
-        "Backer2 pledges 5 USDC and votes for contractor #0",
+        "Backer pledges 5 USDC and votes for contractor #0",
         &[pledge_ix(&backer, &project, 5 * USDC, Some(0))],
         &[&w.backer2],
     )?;
     println!(
-        "     backer2: {} → {}",
+        "     Backer: {} → {}",
         fmt_usdc(before),
         fmt_usdc(app.usdc(&backer))
     );
     app.send(
-        "Backer2 tips Creator 2 1 USDC (tips are not refundable)",
+        "Backer tips Creator 2 1 USDC (tips are not refundable)",
         &[tip_ix(&backer, &project, &creator, USDC)],
         &[&w.backer2],
     )?;
@@ -723,11 +727,11 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     wait_for_deadline(app, deadline)?;
     settle_retrying(app, &project, None, "Settle: 5 of 20 USDC → project FAILED")?;
     app.send(
-        "Backer2 claims refund (100%, no fee)",
+        "Backer claims refund (100%, no fee)",
         &[refund_ix(&backer, &project)],
         &[&w.backer2],
     )?;
-    println!("     backer2 got the 5 USDC pledge back; the 1 USDC tip stays with Creator 2");
+    println!("     Backer got the 5 USDC pledge back; the 1 USDC tip stays with Creator 2");
     let p = app.project(&project)?;
     println!("  ↩️  status: {:?}", p.status);
     Ok(())
@@ -796,19 +800,20 @@ fn balances(app: &App) -> Result<()> {
     let w = wallets()?;
     for (name, who) in [
         ("main", app.main.pubkey()),
-        ("creator", w.creator.pubkey()),
-        ("creator2", w.creator2.pubkey()),
-        ("backer1", w.backer1.pubkey()),
-        ("backer2", w.backer2.pubkey()),
+        ("Contractor 1099", w.creator.pubkey()),
+        ("Creator 2", w.creator2.pubkey()),
+        ("Client", w.backer1.pubkey()),
+        ("Backer", w.backer2.pubkey()),
     ] {
         println!(
-            "{name:8} {who}  {} | {}",
+            "{name:15} {who}  {} | {}",
             fmt_sol(app.sol(&who)),
             fmt_usdc(app.usdc(&who))
         );
     }
     println!(
-        "treasury {}  {}",
+        "{:15} {}  {}",
+        "treasury",
         treasury_vault_address(),
         fmt_usdc(app.usdc_at(&treasury_vault_address()))
     );
@@ -889,7 +894,7 @@ fn run_demo(app: &App, seconds: i64, pace: u64, reset_after: u64, on_reset: &dyn
 fn reset(app: &App) -> Result<()> {
     recycle(app)?;
     setup_wallets(app)?;
-    println!("\n✅ Reset. Backers are loaded with pledge + tip; creators are at 0.");
+    println!("\n✅ Reset. Client and Backer are loaded with payment + tip; Contractor 1099 and Creator 2 are at 0.");
     println!("   The town treasury keeps its fees: nobody can withdraw them (no door yet).");
     Ok(())
 }

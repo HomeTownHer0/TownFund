@@ -171,7 +171,7 @@ export async function fetchState(cfg = CONFIG) {
     else if (sameBytes(data, DISC_BYTES.pledge)) pledges.push(decodePledge(a.pubkey, data));
     else if (sameBytes(data, DISC_BYTES.badge)) badges.push(decodeBadge(a.pubkey, data));
   }
-  // Newest Individual project and newest Community project on TownFund.
+  // Newest job (Creator-only project) and newest Community project on TownFund.
   // Their creators are discovered from the projects themselves.
   const mine = projects.sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
   const success = mine.find((p) => p.kind === "Creator") || null;

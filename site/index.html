@@ -239,7 +239,7 @@
         <text class="road-label" x="905" y="192" text-anchor="middle">5% fee</text>
         <text class="road-label" x="300" y="210" text-anchor="middle">tip</text>
         <text class="road-label" x="300" y="322" text-anchor="middle">tip</text>
-        <text class="road-label" x="768" y="238" text-anchor="middle">tip to Creator 1</text>
+        <text class="road-label" x="712" y="238" text-anchor="start">tip to Contractor 1099</text>
         <text class="road-label" x="935" y="512" text-anchor="end">tip to Creator 2</text>
         <text class="road-label" x="370" y="536" text-anchor="middle">refund if the target is missed</text>
       </g>
@@ -247,13 +247,13 @@
       <!-- nodes -->
       <g class="node" id="n-backer1" transform="translate(30,75)">
         <rect class="plate" width="220" height="120" rx="12"/>
-        <text class="n-name" x="18" y="34">Backer 1</text>
+        <text class="n-name" x="18" y="34">Client</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
         <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
       <g class="node" id="n-backer2" transform="translate(30,325)">
         <rect class="plate" width="220" height="120" rx="12"/>
-        <text class="n-name" x="18" y="34">Backer 2</text>
+        <text class="n-name" x="18" y="34">Backer</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
         <a class="star-svg" data-star target="_blank" rel="noopener" style="display:none"><title></title><text x="202" y="104" text-anchor="end"></text></a>
       </g>
@@ -281,7 +281,7 @@
       </g>
       <g class="node" id="n-creator" transform="translate(945,50)">
         <rect class="plate" width="225" height="120" rx="12"/>
-        <text class="n-name" x="18" y="34">Creator 1</text>
+        <text class="n-name" x="18" y="34">Contractor 1099</text>
         <text class="n-val" x="18" y="82" data-val>–</text><text class="n-unit" x="18" y="104">USDC</text>
       </g>
       <g class="node" id="n-creator2" transform="translate(945,410)">
@@ -425,6 +425,9 @@ function coin(pathId, amount) {
   requestAnimationFrame(step);
 }
 
+// ---- names shown for the demo wallets
+const NAMES = { creator: "Contractor 1099", creator2: "Creator 2", backer1: "Client", backer2: "Backer" };
+
 // ---- state
 let prev = null, chainOffset = 0, last = null;
 
@@ -432,7 +435,7 @@ function vaultNode(id, p, delay = 0) {
   const n = document.getElementById(id);
   n.setAttribute("class", "node vault" + (p?.status === "Succeeded" ? " done" : p?.status === "Failed" || p?.status === "Cancelled" ? " failed" : ""));
   $("[data-title]", n).textContent = p ? truncate(p.title, 24) : "Project vault";
-  $("[data-sub]", n).textContent = p ? (p.kind === "Creator" ? "Individual project, escrow" : "Community project, escrow") : "escrow, owned by the program";
+  $("[data-sub]", n).textContent = p ? (p.kind === "Creator" ? "Job, escrow" : "Community project, escrow") : "escrow, owned by the program";
   $("[data-of]", n).textContent = p ? `of ${usdc(p.target)} USDC target` : "USDC";
   const shownAmount = p ? (p.status === "Active" ? p.vaultBalance : p.status === "Succeeded" ? p.target : p.vaultBalance) : 0;
   $("[data-bar]", n).setAttribute("width", p ? Math.min(274, 274 * (p.status === "Succeeded" ? 1 : p.totalPledged / p.target)) : 0);
@@ -534,7 +537,7 @@ function renderProject(el, p, st) {
     : `<li><span class="muted">${p.status === "Failed" || p.status === "Cancelled" ? "All pledges refunded" : "No pledges yet"}</span><span></span></li>`;
   el.innerHTML = `
     <h2>${esc(p.title)}<span class="status ${p.status}">${p.status}</span></h2>
-    <p class="kind">${p.kind === "Creator" ? `Individual project by ${esc(label(p.creator))}, who is paid on success` : `Community project by ${esc(label(p.creator))}: backers elect one of ${p.candidates.length} contractors`}</p>
+    <p class="kind">${p.kind === "Creator" ? `Job by ${esc(label(p.creator))}, who is paid on success` : `Community project by ${esc(label(p.creator))}: backers elect one of ${p.candidates.length} contractors`}</p>
     <div class="clock">${clock}</div>
     <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><div style="width:${pct}%"></div></div>
     <div class="progress-label"><span>${usdc(p.status === "Succeeded" ? p.target : p.totalPledged)} of ${usdc(p.target)} USDC pledged</span><span>${p.backerCount} backer${p.backerCount === 1 ? "" : "s"}</span></div>
@@ -544,18 +547,18 @@ function renderProject(el, p, st) {
 }
 
 function label(addr) {
-  if (addr && addr === last?.creators?.creator) return "Creator 1";
-  if (addr && addr === last?.creators?.creator2) return "Creator 2";
-  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { backer1: "Backer 1", backer2: "Backer 2" }[k];
+  if (addr && addr === last?.creators?.creator) return NAMES.creator;
+  if (addr && addr === last?.creators?.creator2) return NAMES.creator2;
+  for (const [k, v] of Object.entries(cfg.wallets)) if (v === addr) return { backer1: NAMES.backer1, backer2: NAMES.backer2 }[k];
   return short(addr);
 }
 
 function renderAccounts(st) {
   const rows = [
-    ["Creator 1", st.creators.creator, st.balances.creator],
-    ...(st.creators.creator2 && st.creators.creator2 !== st.creators.creator ? [["Creator 2", st.creators.creator2, st.balances.creator2]] : []),
-    ["Backer 1", cfg.wallets.backer1, st.balances.backer1],
-    ["Backer 2", cfg.wallets.backer2, st.balances.backer2],
+    [NAMES.creator, st.creators.creator, st.balances.creator],
+    ...(st.creators.creator2 && st.creators.creator2 !== st.creators.creator ? [[NAMES.creator2, st.creators.creator2, st.balances.creator2]] : []),
+    [NAMES.backer1, cfg.wallets.backer1, st.balances.backer1],
+    [NAMES.backer2, cfg.wallets.backer2, st.balances.backer2],
     ["Town treasury vault", cfg.treasuryVault, st.balances.treasury],
   ];
   if (st.success) rows.push([`Vault: ${st.success.title}`, st.success.vault, st.success.vaultBalance]);
@@ -658,20 +661,20 @@ let resetAt = 0; // chain time when both creators were last seen empty (after a 
 const seen = new Set();
 async function refreshFeed() {
   if (!last) return true;
-  const labels = { [cfg.wallets.backer1]: "Backer 1", [cfg.wallets.backer2]: "Backer 2", [cfg.treasury]: "Treasury" };
-  if (last.creators?.creator) labels[last.creators.creator] = "Creator 1";
-  if (last.creators?.creator2) labels[last.creators.creator2] = "Creator 2";
+  const labels = { [cfg.wallets.backer1]: NAMES.backer1, [cfg.wallets.backer2]: NAMES.backer2, [cfg.treasury]: "Treasury" };
+  if (last.creators?.creator) labels[last.creators.creator] = NAMES.creator;
+  if (last.creators?.creator2) labels[last.creators.creator2] = NAMES.creator2;
   if (last.success) labels[last.success.address] = "Vault: " + last.success.title;
   if (last.community) labels[last.community.address] = "Vault: " + last.community.title;
   const items = await fetchActivity(txCache, labels, cfg, 12);
   // TIP box. Count tips made after the page was opened AND in the current run
-  // (a run starts when its Individual project opens). So TIP reads 0 as
+  // (a run starts when its job opens). So TIP reads 0 as
   // soon as the page loads, and drops back to 0 when a new run starts or
   // the demo is reset (both creators emptied).
   const runStart = Math.max(pageOpenedAt ?? Infinity, (last.success || last.community)?.createdAt ?? 0, resetAt);
   const tipped = items
     .filter((a) => a.name === "Tip" && a.ok && a.time >= runStart)
-    .reduce((sum, a) => sum + (a.moves.find((m) => (m.who === "Creator 1" || m.who === "Creator 2") && m.amount > 0)?.amount || 0), 0);
+    .reduce((sum, a) => sum + (a.moves.find((m) => (m.who === NAMES.creator || m.who === NAMES.creator2) && m.amount > 0)?.amount || 0), 0);
   // Never count down within a run, even if older history isn't returned.
   if (tipRun.start !== runStart) tipRun = { start: runStart, max: 0 };
   tipRun.max = Math.max(tipRun.max, tipped);
