@@ -198,8 +198,8 @@ purpose in the code to make sure its test would catch it.
 
 These are the next things to fix, not hidden bugs:
 
-1. A Community contractor gets paid at settle, before the work is done.
-   Milestone payments will fix that.
+1. A contractor gets paid when the deadline passes, before anyone confirms
+   the work. Client approval and milestone payments will fix that.
 2. One wallet = one vote, so someone could buy votes with extra wallets.
 3. Treasury money stays locked until there's a "door" to spend it, like a
    multisig or a community vote.
