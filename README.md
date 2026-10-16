@@ -72,8 +72,9 @@ The rules:
   backer can claim a full refund with no fee. Refunds open even if nobody
   runs settle.
 - The creator can **cancel** before the deadline, and refunds open right away.
-- **Tips** go straight to the creator. No fee, no refunds, and they don't
-  count toward the target.
+- **Tips** go straight to whoever opened the project: the contractor on a
+  job, the creator on a community project (not the elected contractor). No
+  fee, no refunds, and they don't count toward the target.
 - The **treasury** belongs to the program itself (a PDA, so there's no
   private key for anyone to hold). In V1 there's no way to withdraw from it.
 - After a project succeeds, each backer can get a **soulbound badge**, an
@@ -93,7 +94,7 @@ in: who paid whom, then the program's own log lines the way Solana recorded
 them. Nothing to install, and just looking at the page can't move any money.
 
 Two things on the map that might need explaining: **TIP** isn't an account.
-On-chain, a tip goes straight to the contractor or creator, but the coin
+On-chain, a tip goes straight to whoever opened the project, but the coin
 passes through TIP so you can see who tipped whom, and TIP shows the total
 for that run. The ★ next to the Client counts their badges and links to the
 newest one on Explorer.
@@ -128,7 +129,7 @@ The program has eight:
 - `pledge`: a backer moves USDC into the vault. It has to be before the
   deadline, from the backer's own account, and into this project's vault,
   not some other one.
-- `tip`: anyone sends USDC straight to the creator.
+- `tip`: anyone sends USDC straight to whoever opened the project.
 - `settle`: anyone, after the deadline. Pays 95/5 to the real payee, or
   marks the project Failed.
 - `cancel_project`: only the creator, only before the deadline.
