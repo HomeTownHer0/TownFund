@@ -2,26 +2,36 @@
 
 [![build-and-test](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml/badge.svg)](https://github.com/HomeTownHer0/TownFund/actions/workflows/build.yml)
 
-TownFund is a Solana-native platform that replaces outdated temp-agency
-friction with USDC escrow and digital approvals, so workers can get paid the
-same day they finish short-term jobs. It also lets communities crowdfund
-local needs and routes the money directly to workers, with a 5% fee going
-to a town treasury that will sit in a Jupiter USDC yield vault. It's
-intended to be built as a compliant US marketplace that uses Solana for
-fast, low-cost settlement rather than pure decentralization.
+**The problem.** People who pick up short-term work, like landscaping,
+repairs or moving help, often wait days or weeks to get paid, and the
+worker and the client each have to trust the other with the money.
+Communities that want to fix something local, like a pothole, have no
+simple way to pool money with a guarantee that it comes back if the effort
+falls short.
+
+**TownFund** puts the payment in a USDC escrow on Solana before the work
+starts, so the worker is paid the same day the job is done. Community
+projects pool money the same way, and if the goal isn't reached, everyone
+is refunded automatically. A 5% fee on successful payouts goes to a town
+treasury. The long-term plan is a compliant US marketplace that uses Solana
+for fast, low-cost settlement, with the treasury earning yield in a Jupiter
+USDC vault.
 
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 for Solana School, Fall 2026.
 
 ## What V1 does
 
-V1 is the money layer everything else sits on: the escrow. People pledge
-USDC to a project, and the money sits in an escrow vault until the
-deadline. If the project hits its target, the vault pays out: 95% to
-whoever does the work, 5% to the town treasury. If it misses, everyone gets
-100% of their money back. Nobody holds the money in between, me included.
-The program has no instruction that moves escrowed money any other way (the
-one caveat is the upgrade authority, covered under known limitations).
+V1 is the money layer everything else sits on: the escrow. Money for a job
+or a community project sits in an escrow vault until the deadline. If the
+target is met, the vault pays out: 95% to whoever does the work, 5% to the
+town treasury. If it isn't, everyone gets 100% of their money back. Nobody
+holds the money in between, me included. The program has no instruction
+that moves escrowed money any other way (the one caveat is the upgrade
+authority, covered under known limitations).
+
+In V1 a job pays out automatically when its time is up. Letting the client
+approve the work first is the next step.
 
 **Status:** V1 is done. The program has 62 passing tests, it's deployed on
 Devnet, and the full demo runs on Devnet from a button on the
@@ -33,19 +43,21 @@ after each run (Oct 11, 2026).
 | | Status |
 |---|---|
 | USDC escrow on Solana | Built, live on Devnet |
-| Communities crowdfund local needs | Built (Creator-only and Community projects) |
+| Jobs paid from escrow, same day | Built: the client pays in, the worker gets 95% when the job's time is up |
+| Communities crowdfund local needs | Built: Community projects, with full refunds if the goal is missed |
 | Money goes straight to the worker | Built: a Community project pays the contractor the backers picked |
 | 5% fee to a town treasury | Built (the 95/5 split) |
+| Client approves the work before payout | Next |
 | Treasury earns yield in a Jupiter USDC vault | Next. Fees sit in the treasury vault for now, and the program already saves room for the "door" this needs |
-| Short-term jobs with digital approval and same-day pay | Next. This is the milestones step: the job is escrowed, the hirer approves, the worker gets paid |
 | Compliant US marketplace | Long-term. That's a business and legal track (identity checks, money-transmission rules), not code |
 
 ## How it works
 
 There are two kinds of projects:
 
-- **Creator-only:** the person who started the project gets paid.
-- **Community:** backers vote on who does the job.
+- **Job (Creator-only):** the contractor posts the job, the client pays
+  into escrow, and the contractor gets paid.
+- **Community:** neighbors chip in, and backers vote on who does the work.
 
 The rules:
 
@@ -81,23 +93,25 @@ in: who paid whom, then the program's own log lines the way Solana recorded
 them. Nothing to install, and just looking at the page can't move any money.
 
 Two things on the map that might need explaining: **TIP** isn't an account.
-On-chain, a tip goes straight from the backer to the creator, but the coin
+On-chain, a tip goes straight to the contractor or creator, but the coin
 passes through TIP so you can see who tipped whom, and TIP shows the total
-for that run. The ★ next to a backer counts their badges and links to the
+for that run. The ★ next to the Client counts their badges and links to the
 newest one on Explorer.
 
 ### Check it on Devnet yourself
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
 
-These are real transactions from the demo run on Oct 11, 2026, where
-"Pothole on Westheimer" succeeds and "Fix Local Park" fails:
+These are real transactions from the demo run on Oct 11, 2026. That run
+used the same steps under earlier names: the job was a Creator-only project
+called "Pothole on Westheimer", and the failed community project was
+"Fix Local Park".
 
 | Step | Link | What you'll see |
 |---|---|---|
-| Pledge 10 USDC into escrow | [tx](https://explorer.solana.com/tx/3GE2pcWW8V9k5LRU9U3oDhuJRB8gwH67n8JX2WKRAsBK2byoguxM4dHZKis8pvESsMMowkY7fxKefVpmJ9UxbW97?cluster=devnet) | USDC moves from the backer to the vault |
-| Settle (success) | [tx](https://explorer.solana.com/tx/4ic5eQf3emsp729XR8AXr9L1M63197BXJDXChkGag5LJREhy55SUU2QbevCLB2BuKyivDcobC5WBC1fFdvr7sQ8n?cluster=devnet) | 9.5 USDC to the creator, 0.5 to the treasury, vault empty |
-| Soulbound badge | [NFT](https://explorer.solana.com/address/EKjbBup2erEZbWqFxRcG4FXF9wdYqav5aDAbWNoFFsNZ?cluster=devnet) | "TownFund Backer: Pothole on Westheimer", owned by the backer, frozen for good |
+| Pay 10 USDC into escrow | [tx](https://explorer.solana.com/tx/3GE2pcWW8V9k5LRU9U3oDhuJRB8gwH67n8JX2WKRAsBK2byoguxM4dHZKis8pvESsMMowkY7fxKefVpmJ9UxbW97?cluster=devnet) | USDC moves from the client to the vault |
+| Settle (success) | [tx](https://explorer.solana.com/tx/4ic5eQf3emsp729XR8AXr9L1M63197BXJDXChkGag5LJREhy55SUU2QbevCLB2BuKyivDcobC5WBC1fFdvr7sQ8n?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
+| Soulbound badge | [NFT](https://explorer.solana.com/address/EKjbBup2erEZbWqFxRcG4FXF9wdYqav5aDAbWNoFFsNZ?cluster=devnet) | Owned by the client and frozen for good |
 | Settle (failure) | [tx](https://explorer.solana.com/tx/45GYQyAcMyEgwygw1CPmLcrBdmcT2EPvkPPdcTahxL6TfqziBSAyVokNYk9ubMQf5hxRQxgvPMkaQi3754pNCQWS?cluster=devnet) | Only 5 of 20 USDC raised, so it's marked Failed and no money moves |
 | Refund | [tx](https://explorer.solana.com/tx/66uuFZTt4b2AmRQ78jLpzmTK3FqJTuQ81w1wjva5TpjTym2GeKVUuuQTR4mqr7uHHKZpVa2Yr9MLJndFEh4HHH4s?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
 
@@ -243,18 +257,18 @@ cargo run -p townfund-cli -- demo
 That one command runs the whole Demo Day story against the live program and
 prints an Explorer link for every step:
 
-1. It funds four demo wallets (Creator 1, Creator 2, Backer 1, Backer 2)
-   from my main wallet: SOL for fees, USDC for pledges and tips.
-2. **"Pothole on Westheimer"** (Creator-only, opened by Creator 1)
-   succeeds. Backer 1 pledges 10 USDC and tips Creator 1 1 USDC. After the
-   deadline, settle pays out 95/5 and Backer 1 gets a soulbound badge.
-3. **"Fix Local Park"** (Community, opened by Creator 2) fails. Backer 2
-   pledges 5 of the 20 USDC target and tips Creator 2 1 USDC. After the
-   deadline, settle marks it Failed and Backer 2 gets the 5 back. The tip
-   stays with Creator 2, since tips aren't refundable.
-4. About 15 seconds later it resets: creators emptied, backers refilled,
-   ready to go again. The treasury keeps its fees, since V1 has no way to
-   withdraw them.
+1. It funds four demo wallets (Contractor 1099, Creator 2, Client, Backer)
+   from my main wallet: SOL for fees, USDC for payments and tips.
+2. **"Landscaping project"** is a job. Contractor 1099 posts it, the Client
+   pays 10 USDC into escrow and tips Contractor 1099 1 USDC. When the job's
+   time is up, settle pays out 95/5 and the Client gets a soulbound badge.
+3. **"Pothole on Westheimer"** is a community crowdfund opened by Creator 2.
+   The Backer pledges 5 of the 20 USDC target and tips Creator 2 1 USDC.
+   After the deadline, settle marks it Failed and the Backer gets the 5
+   back. The tip stays with Creator 2, since tips aren't refundable.
+4. About 15 seconds later it resets: Contractor 1099 and Creator 2 emptied,
+   Client and Backer refilled, ready to go again. The treasury keeps its
+   fees, since V1 has no way to withdraw them.
 
 Each step pauses 3 seconds so the live page can show every move. A whole
 run takes about a minute.
