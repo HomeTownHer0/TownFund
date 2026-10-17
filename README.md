@@ -99,6 +99,20 @@ passes through TIP so you can see who tipped whom, and TIP shows the total
 for that run. The ★ next to the Client counts their badges and links to the
 newest one on Explorer.
 
+### See how it fits together
+
+**[hometownher0.github.io/TownFund/board.html](https://hometownher0.github.io/TownFund/board.html)**
+
+The case board maps the whole system on one page. **The money trail** pins
+every wallet, project, vault, receipt and the treasury from a full demo run on
+Devnet (Oct 17, 2026), with a string for each of the 10 transactions. Press
+**Play the run** to step through them in order: each card shows its USDC
+balance after that step, and every card and string opens the address or
+transaction on Explorer. **Repo architecture** shows how the program, the
+tests, the CLI and the live page connect, and which programs TownFund calls.
+The V2 additions on that view are stamped PROPOSED: they're the plan, not
+built yet.
+
 ### Check it on Devnet yourself
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
@@ -193,7 +207,7 @@ purpose in the code to make sure its test would catch it.
 - `programs/townfund/src/error.rs`: every reason an instruction can be refused
 - `programs/townfund/tests/`: the 62 tests (63 in the demo build)
 - `cli/src/main.rs`: the `townfund` command-line tool: the demo, the reset, and the local runner behind the Run demo button
-- `site/`: the live page, published to GitHub Pages
+- `site/`: the live page and the case board (`board.html`), published to GitHub Pages
 
 ## Known limitations
 
@@ -225,6 +239,7 @@ These are the next things to fix, not hidden bugs:
 - [x] Full demo run on Devnet (links above)
 - [x] Live status page on GitHub Pages
 - [x] Run demo button that starts the demo from the page and resets after each run
+- [x] Case board: the money trail and the repo architecture on one page
 - [ ] Demo Day
 - [ ] After that: the treasury door and Jupiter yield vault, short-term jobs with approvals and same-day pay, and the website
 
