@@ -73,7 +73,7 @@ fn backer_gets_soulbound_nft_after_success() {
 
     let nft = w.nft(&asset);
     assert_eq!(nft.owner, backer.pubkey(), "NFT is in the backer's wallet");
-    assert_eq!(nft.name, "TownFund Backer: Pothole on Westheimer");
+    assert_eq!(nft.name, "TownFund Backer: Trash clean up Buffalo Bayou Park");
     assert_eq!(nft.uri, "https://github.com/HomeTownHer0/townfund");
     assert_eq!(
         nft.update_authority,

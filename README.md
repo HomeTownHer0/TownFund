@@ -5,8 +5,8 @@
 People who pick up short-term work, like landscaping, repairs or moving
 help, often wait days or weeks to get paid, and the worker and the client
 each have to trust the other with the money. Communities that want to fix
-something local, like a pothole, have no simple way to pool money with a
-guarantee that it comes back if the effort falls short.
+something local, like cleaning up trash in a park, have no simple way to
+pool money with a guarantee that it comes back if the effort falls short.
 
 **TownFund** is a USDC escrow on Solana for both. The money is locked in a
 vault before the work starts. If the project reaches its target by the
@@ -153,9 +153,9 @@ GitHub runs both builds on every push. The demo funds four wallets
 1. **"Landscaping project"**, a job: the Client pays 10 USDC and tips
    Contractor 1099 1 USDC. At the deadline, settle pays out 95/5 and the
    Client gets a badge.
-2. **"Pothole on Westheimer"**, a community crowdfund: the Backer pledges 5
-   of the 20 USDC target and tips Creator 2 1 USDC. Settle marks it Failed
-   and the Backer gets the 5 back.
+2. **"Trash clean up Buffalo Bayou Park"**, a community crowdfund: the
+   Backer pledges 5 of the 20 USDC target and tips Creator 2 1 USDC. Settle
+   marks it Failed and the Backer gets the 5 back.
 
 About 15 seconds later it resets the wallets so it can run again. The whole
 run takes about a minute. The Run demo button only works on my computer,

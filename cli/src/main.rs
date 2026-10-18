@@ -90,7 +90,7 @@ enum Cmd {
         #[arg(long, default_value_t = 20)]
         seconds: i64,
     },
-    /// Community project ("Pothole on Westheimer"): under target -> fails ->
+    /// Community project ("Trash clean up Buffalo Bayou Park"): under target -> fails ->
     /// backer refunded 100%
     /// (run setup-wallets first)
     DemoFail {
@@ -437,11 +437,11 @@ fn demo_wallet(name: &str) -> Result<Keypair> {
 struct Wallets {
     /// "Contractor 1099": opens the "Landscaping project" job.
     creator: Keypair,
-    /// "Creator 2": opens "Pothole on Westheimer" (Community).
+    /// "Creator 2": opens "Trash clean up Buffalo Bayou Park" (Community).
     creator2: Keypair,
     /// "Client": pays for the job.
     backer1: Keypair,
-    /// "Backer": chips in to the pothole crowdfund.
+    /// "Backer": chips in to the park cleanup crowdfund.
     backer2: Keypair,
 }
 
@@ -685,7 +685,7 @@ fn demo_fail(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     let backer = w.backer2.pubkey();
     let id = new_project_id() + 1;
     let project = project_address(&creator, id);
-    let title = "Pothole on Westheimer";
+    let title = "Trash clean up Buffalo Bayou Park";
     let candidates = vec![Keypair::new().pubkey(), Keypair::new().pubkey()];
 
     app.send(

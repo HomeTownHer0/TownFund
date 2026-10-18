@@ -209,7 +209,7 @@ impl Default for NewProject {
             kind: ProjectKind::Creator,
             target: 100 * USDC,
             duration_secs: 7 * DAY,
-            title: "Pothole on Westheimer".into(),
+            title: "Trash clean up Buffalo Bayou Park".into(),
             candidates: vec![],
             mint: USDC_MINT,
         }
