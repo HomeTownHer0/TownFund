@@ -24,17 +24,16 @@ for Solana School, Fall 2026. Deployed on Devnet, 62 passing tests.
 There are two kinds of projects:
 
 - **Job (Creator-only):** the contractor posts the job, the client pays
-  into escrow, and the contractor is paid.
-- **Community:** neighbors chip in, and each backer votes with their first
-  pledge on which listed contractor does the work. The contractor with the
-  most votes is paid.
+  into escrow, and contractor is paid.
+- **Community:** neighbors chip in, and each backer pays
+  into escrow, and contractor is paid. 
 
 The rules:
 
 - A pledge is at least 1 USDC, and you can add more later. A target is at
   least 10 USDC, and a project runs 1 to 60 days (the Devnet demo build also
-  allows 10 seconds to 10 minutes, so a whole project fits in a live demo).
-- After the deadline, anyone can run **settle**. If the target was met, the
+  allows 20 seconds, so a whole project fits in a live demo).
+- After the deadline, account will **settle**. If the target was met, the
   whole vault pays out 95/5; the fee rounds down so nothing is left behind.
   If it was missed, the project is marked Failed.
 - The creator can **cancel** before the deadline.
@@ -45,14 +44,14 @@ The rules:
   and they don't count toward the target.
 - The **treasury** belongs to the program, and V1 has no way to withdraw
   from it.
-- After a success, each backer can get a **soulbound badge**: a Metaplex
+- After a success, each backer get's a **soulbound badge**: a Metaplex
   Core NFT, frozen the moment it's made, that can't be sold or transferred.
 
 ## The live page
 
 The live page reads straight from Devnet every few seconds and shows every
-wallet, both project vaults and the town treasury. When the demo runs,
-coins travel along the money map, and the program log underneath prints
+wallet, both project vaults & the town treasury. When the demo runs,
+coins travel along the money map. Then, the program log underneath prints
 each transaction as it lands. Looking at the page can't move any money.
 
 On the map, **TIP** isn't a real account: a tip goes straight to whoever
