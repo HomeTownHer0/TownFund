@@ -94,8 +94,8 @@ Eight instructions:
   be claimed twice.
 - `mint_backer_badge`: one badge per backer per successful project.
 
-Every account is a PDA, an address the program works out from fixed seeds,
-so there's no private key behind any of them:
+Every account TownFund creates and stores is a PDA, an address the program
+works out from fixed seeds, so there's no private key behind any of them:
 
 - **Project** `["project", creator, project_id]`: terms, totals, status,
   candidates and votes.
@@ -106,8 +106,12 @@ so there's no private key behind any of them:
 - **Treasury** `["treasury"]` and **fee vault** `["treasury_vault"]`: the
   5% fees.
 - **Badge record** `["badge", project, backer]`: blocks a second badge.
-- **Badge authority** `["badge_authority"]`: never signs, so badges can't
-  be edited.
+- **Badge authority** `["badge_authority"]`: a PDA address with no data,
+  set as every badge's update authority. It never signs, so badges can't be
+  edited.
+
+The badge NFT itself isn't a PDA: a fresh one-time key creates it and signs
+once, and the badge record above is what stops a second one.
 
 Only Circle's Devnet USDC is accepted, all math is checked so an overflow
 stops the transaction, and every money movement emits an event.
