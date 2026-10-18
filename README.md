@@ -32,7 +32,8 @@ The rules:
 
 - A pledge is at least 1 USDC, and you can add more later. A target is at
   least 10 USDC, and a project runs 1 to 60 days (the Devnet demo build also
-  allows 20 seconds, so a whole project fits in a live demo).
+  allows 10 seconds to 10 minutes; the live demo uses 20-second projects, so
+  a whole project fits on stage).
 - After the deadline, account will **settle**. If the target was met, the
   whole vault pays out 95/5; the fee rounds down so nothing is left behind.
   If it was missed, the project is marked Failed.
