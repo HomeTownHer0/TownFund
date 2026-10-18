@@ -10,19 +10,17 @@ simple way to pool money with a guarantee that it comes back if the effort
 falls short.
 
 **TownFund** puts the payment in a USDC escrow on Solana before the work
-starts, so the worker is paid the same day the job is done. Community
-projects pool money the same way, and if the goal isn't reached, everyone
-is refunded automatically. A 5% fee on successful payouts goes to a town
-treasury. The long-term plan is a compliant US marketplace that uses Solana
-for fast, low-cost settlement, with the treasury earning yield in a Jupiter
-USDC vault.
+starts, and pays the worker from escrow when the job's time is up.
+Community projects pool money the same way, and if the goal isn't reached,
+every backer can claim a full refund. A 5% fee on successful payouts goes
+to a town treasury.
 
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 for Solana School, Fall 2026.
 
 ## What V1 does
 
-V1 is the money layer everything else sits on: the escrow. Money for a job
+V1 is a USDC escrow on Solana. Money for a job
 or a community project sits in an escrow vault until the deadline. If the
 target is met, the vault pays out: 95% to whoever does the work, 5% to the
 town treasury. If it isn't, everyone gets 100% of their money back. Nobody
@@ -30,26 +28,22 @@ holds the money in between, me included. The program has no instruction
 that moves escrowed money any other way (the one caveat is the upgrade
 authority, covered under known limitations).
 
-In V1 a job pays out automatically when its time is up. Letting the client
-approve the work first is the next step.
+A job pays out when its time is up; there's no separate approval step.
 
 **Status:** V1 is done. The program has 62 passing tests, it's deployed on
 Devnet, and the full demo runs on Devnet from a button on the
 [live page](https://hometownher0.github.io/TownFund/), resetting itself
 after each run (Oct 11, 2026).
 
-### Built now vs. next
+### What's built
 
-| | Status |
+| | |
 |---|---|
-| USDC escrow on Solana | Built, live on Devnet |
-| Jobs paid from escrow, same day | Built: the client pays in, the worker gets 95% when the job's time is up |
-| Communities crowdfund local needs | Built: Community projects, with full refunds if the goal is missed |
-| Money goes straight to the worker | Built: a Community project pays the contractor the backers picked |
-| 5% fee to a town treasury | Built (the 95/5 split) |
-| Client approves the work before payout | Next |
-| Treasury earns yield in a Jupiter USDC vault | Next. Fees sit in the treasury vault for now, and the program already saves room for the "door" this needs |
-| Compliant US marketplace | Long-term. That's a business and legal track (identity checks, money-transmission rules), not code |
+| USDC escrow on Solana | Live on Devnet |
+| Jobs paid from escrow | The client pays in, the worker gets 95% when the job's time is up |
+| Communities crowdfund local needs | Community projects, with full refunds if the goal is missed |
+| Money goes straight to the worker | A Community project pays the contractor the backers picked |
+| 5% fee to a town treasury | The 95/5 split on every successful payout |
 
 ## How it works
 
@@ -103,18 +97,16 @@ newest one on Explorer.
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
 
-These are real transactions from the demo run on Oct 11, 2026. That run
-used the same steps under earlier names: the job was a Creator-only project
-called "Pothole on Westheimer", and the failed community project was
-"Fix Local Park".
+These are real transactions from the demo run on Oct 17, 2026: the
+"Landscaping project" job and the "Pothole on Westheimer" crowdfund.
 
 | Step | Link | What you'll see |
 |---|---|---|
-| Pay 10 USDC into escrow | [tx](https://explorer.solana.com/tx/3GE2pcWW8V9k5LRU9U3oDhuJRB8gwH67n8JX2WKRAsBK2byoguxM4dHZKis8pvESsMMowkY7fxKefVpmJ9UxbW97?cluster=devnet) | USDC moves from the client to the vault |
-| Settle (success) | [tx](https://explorer.solana.com/tx/4ic5eQf3emsp729XR8AXr9L1M63197BXJDXChkGag5LJREhy55SUU2QbevCLB2BuKyivDcobC5WBC1fFdvr7sQ8n?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
-| Soulbound badge | [NFT](https://explorer.solana.com/address/EKjbBup2erEZbWqFxRcG4FXF9wdYqav5aDAbWNoFFsNZ?cluster=devnet) | Owned by the client and frozen for good |
-| Settle (failure) | [tx](https://explorer.solana.com/tx/45GYQyAcMyEgwygw1CPmLcrBdmcT2EPvkPPdcTahxL6TfqziBSAyVokNYk9ubMQf5hxRQxgvPMkaQi3754pNCQWS?cluster=devnet) | Only 5 of 20 USDC raised, so it's marked Failed and no money moves |
-| Refund | [tx](https://explorer.solana.com/tx/66uuFZTt4b2AmRQ78jLpzmTK3FqJTuQ81w1wjva5TpjTym2GeKVUuuQTR4mqr7uHHKZpVa2Yr9MLJndFEh4HHH4s?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
+| Pay 10 USDC into escrow | [tx](https://explorer.solana.com/tx/5NFAmsrzq9P3F3deyBqm9A3mE7J2R9oMXFSGfHV8azyBy4j3cSHjK2VMyA3fNice38WwsG8Vws1nPbVUmZeUU9Nc?cluster=devnet) | USDC moves from the client to the vault |
+| Settle (success) | [tx](https://explorer.solana.com/tx/s4CLdq6ZYrFtMyWvSXXyNeBe5nZSNAmp4oce1zuk7oNasxqsVXVG8KTYboKJDMaRnU6HATDnZzVsVzrcahZ5JnC?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
+| Soulbound badge | [NFT](https://explorer.solana.com/address/9Q2YcrsQZACfyY7yuGK45nxRaercsPDFG9nvcRiDRBKN?cluster=devnet) | Owned by the client and frozen for good |
+| Settle (failure) | [tx](https://explorer.solana.com/tx/5CAAf9W6fDRvNodHAkWU5DcVDD9tZcWvny5ErxQYCFKH94dmpb2K98Rd5xMnNK9uJkmPYxzkm8WmQSuPsxNuFzCt?cluster=devnet) | Only 5 of 20 USDC raised, so it's marked Failed and no money moves |
+| Refund | [tx](https://explorer.solana.com/tx/24YyJ4RMnmuYYE7icQhsRnCm6gNHbSMf35rADYqykcyaHHNjyKYmVTb9yWv1T3tmBKbzaZApwT4rgGMp57DuyW5A?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
 
 ### The instructions
 
@@ -151,15 +143,15 @@ move what's inside.
 - **Pledge receipt** `["pledge", project, backer]`: how much one backer put
   in, and their vote.
 - **Treasury** `["treasury"]` and **fee vault** `["treasury_vault"]`: the
-  5% fees. There's a `door_authority` field saved for later; it's always
-  empty in V1.
+  5% fees. Its `door_authority` field is always empty in V1, so nothing
+  can spend the fees.
 - **Badge record** `["badge", project, backer]`: which NFT a backer got.
   Its existence blocks a second one.
 - **Badge authority** `["badge_authority"]`: the update authority on every
   badge. It never signs anything, so badges can't be edited.
 
-Each account also has a version number and some spare space, so later
-versions can add fields without breaking old data. Every money movement
+Each account also has a version number and some spare space, so fields
+can be added without breaking old data. Every money movement
 emits an event (`Pledged`, `Tipped`, `Settled`, `Refunded`, and so on).
 
 ### How I know it's safe
@@ -197,16 +189,14 @@ purpose in the code to make sure its test would catch it.
 
 ## Known limitations
 
-These are the next things to fix, not hidden bugs:
+These are known limits of V1, not hidden bugs:
 
 1. A contractor gets paid when the deadline passes, before anyone confirms
-   the work. Client approval and milestone payments will fix that.
+   the work.
 2. One wallet = one vote, so someone could buy votes with extra wallets.
-3. Treasury money stays locked until there's a "door" to spend it, like a
-   multisig or a community vote.
+3. Treasury money stays locked. V1 has no way to spend it.
 4. On Devnet my wallet is the upgrade authority, so I could replace the
-   program and change the rules for money in escrow. Before any real money,
-   that has to move to a multisig or be revoked.
+   program and change the rules for money in escrow.
 5. The rent for a project and its vault (about 0.006 SOL) isn't returned
    after the project ends.
 6. USDC sent straight to a vault without using `pledge` isn't tracked by a
@@ -226,7 +216,6 @@ These are the next things to fix, not hidden bugs:
 - [x] Live status page on GitHub Pages
 - [x] Run demo button that starts the demo from the page and resets after each run
 - [ ] Demo Day
-- [ ] After that: the treasury door and Jupiter yield vault, short-term jobs with approvals and same-day pay, and the website
 
 ## Deployment
 
