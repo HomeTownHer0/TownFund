@@ -11,8 +11,8 @@ pool money with a guarantee that it comes back if the effort falls short.
 **TownFund** is a USDC escrow on Solana for both. The money is locked in a
 vault before the work starts. If the project reaches its target by the
 deadline, the vault pays 95% to whoever does the work and 5% to a town
-treasury. If it doesn't, every backer gets 100% back. Nobody holds the money
-in between, me included.
+treasury. If it doesn't, every backer gets 100% back. Nobody holds a key to
+the vaults; only the program's rules can release the money.
 
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
 for Solana School, Fall 2026. Deployed on Devnet, 62 passing tests.
@@ -24,16 +24,17 @@ for Solana School, Fall 2026. Deployed on Devnet, 62 passing tests.
 There are two kinds of projects:
 
 - **Job (Creator-only):** the contractor posts the job, the client pays
-  into escrow, and contractor is paid.
-- **Community:** neighbors chip in, and each backer pays
-  into escrow, and contractor is paid. 
+  into escrow, and the contractor is paid.
+- **Community:** neighbors chip in, and each backer votes with their first
+  pledge on which listed contractor does the work. The contractor with the
+  most votes is paid.
 
 The rules:
 
 - A pledge is at least 1 USDC, and you can add more later. A target is at
   least 10 USDC, and a project runs 1 to 60 days. In the live demo on
   Devnet, each project runs for 20 seconds so the whole thing fits on stage.
-- After the deadline, account will **settle**. If the target was met, the
+- After the deadline, anyone can send **settle**. If the target was met, the
   whole vault pays out 95/5; the fee rounds down so nothing is left behind.
   If it was missed, the project is marked Failed.
 - The creator can **cancel** before the deadline.
@@ -44,19 +45,23 @@ The rules:
   and they don't count toward the target.
 - The **treasury** belongs to the program, and V1 has no way to withdraw
   from it.
-- After a success, each backer get's a **soulbound badge**: a Metaplex
+- After a success, each backer can get a **soulbound badge**: a Metaplex
   Core NFT, frozen the moment it's made, that can't be sold or transferred.
 
 ## The live page
 
 The live page reads straight from Devnet every few seconds and shows every
-wallet, both project vaults & the town treasury. When the demo runs,
-coins travel along the money map. Then, the program log underneath prints
+wallet, both project vaults and the town treasury. When the demo runs,
+coins travel along the money map, and the program log underneath prints
 each transaction as it lands. Looking at the page can't move any money.
 
 On the map, **TIP** isn't a real account: a tip goes straight to whoever
 opened the project, but the coin passes through TIP so you can see who
 tipped whom. The ★ next to the Client counts their badges.
+
+Under the map, a labeled simulation previews the next version: the
+Landscaping job paid in three phases, released by photo proof and the boss's
+signature. It doesn't touch Devnet or move any money.
 
 ## Check it on Devnet
 
