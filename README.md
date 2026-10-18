@@ -62,15 +62,16 @@ tipped whom. The ★ next to the Client counts their badges.
 
 Program: [`FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv`](https://explorer.solana.com/address/FdaMK3RcAw7oGguD1xZnSrkZa7XKzGU6yGMskPptPXrv?cluster=devnet)
 
-Real transactions from the demo run on Oct 17, 2026:
+Real transactions from the demo run on Oct 18, 2026: the "Landscaping project" job
+and the "Trash clean up Buffalo Bayou Park" crowdfund.
 
 | Step | Link | What you'll see |
 |---|---|---|
-| Client pays 10 USDC into escrow | [tx](https://explorer.solana.com/tx/5NFAmsrzq9P3F3deyBqm9A3mE7J2R9oMXFSGfHV8azyBy4j3cSHjK2VMyA3fNice38WwsG8Vws1nPbVUmZeUU9Nc?cluster=devnet) | USDC moves from the client to the vault |
-| Settle (success) | [tx](https://explorer.solana.com/tx/s4CLdq6ZYrFtMyWvSXXyNeBe5nZSNAmp4oce1zuk7oNasxqsVXVG8KTYboKJDMaRnU6HATDnZzVsVzrcahZ5JnC?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
-| Soulbound badge | [NFT](https://explorer.solana.com/address/9Q2YcrsQZACfyY7yuGK45nxRaercsPDFG9nvcRiDRBKN?cluster=devnet) | Owned by the client and frozen for good |
-| Settle (failure) | [tx](https://explorer.solana.com/tx/5CAAf9W6fDRvNodHAkWU5DcVDD9tZcWvny5ErxQYCFKH94dmpb2K98Rd5xMnNK9uJkmPYxzkm8WmQSuPsxNuFzCt?cluster=devnet) | 5 of 20 USDC raised, so it's marked Failed and no money moves |
-| Refund | [tx](https://explorer.solana.com/tx/24YyJ4RMnmuYYE7icQhsRnCm6gNHbSMf35rADYqykcyaHHNjyKYmVTb9yWv1T3tmBKbzaZApwT4rgGMp57DuyW5A?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
+| Client pays 10 USDC into escrow | [tx](https://explorer.solana.com/tx/32HNvS53kWUvC3Nu4SoX68T8DYAPYp6w2W4QDZM13ahxA9bRb42dQdVAaSZ971Ce7LwaM2B23yK37EZdK2bokGyk?cluster=devnet) | USDC moves from the client to the vault |
+| Settle (success) | [tx](https://explorer.solana.com/tx/56NFhbPQy2xe8P2Towp8U69yBkV6gzEsNrgHT2qbctxNyvEDtQvGV8ndgvGLZ7xKPvADgACtw2XQQhoVtA2Tgcuw?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
+| Soulbound badge | [NFT](https://explorer.solana.com/address/GNSBB7BL5YwcVyaCL2Qj3bceSMzLuHsQsYWJ57rBDQCv?cluster=devnet) | Owned by the client and frozen for good |
+| Settle (failure) | [tx](https://explorer.solana.com/tx/2fiBdK97WakDnwxSz85znY6PJ1PNk9iLzZXtDuuxVjMX35eC8nkiipEDp9ZN76c8E829AEY8c8PrfSEKotgBsFLs?cluster=devnet) | 5 of 20 USDC raised, so it's marked Failed and no money moves |
+| Refund | [tx](https://explorer.solana.com/tx/16o4akLKcSVqigRin6M8aBiWMaMH6dc8bjp45rpiWYG5ALge8KptGaWrkU3J9VNcvPaKdCe7r1of2C1cUJStbXE?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
 
 Other addresses: Circle Devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 ([faucet](https://faucet.circle.com)), Metaplex Core
