@@ -655,7 +655,7 @@ function renderProject(el, p, st) {
     : `<li><span class="muted">${p.status === "Failed" || p.status === "Cancelled" ? "All pledges refunded" : "No pledges yet"}</span><span></span></li>`;
   el.innerHTML = `
     <h2>${esc(p.title)}<span class="status ${p.status}">${p.status}</span></h2>
-    <p class="kind">${p.kind === "Creator" ? `Job by ${esc(label(p.creator))}, who is paid on success` : `Community project by ${esc(label(p.creator))}: backers elect one of ${p.candidates.length} contractors`}</p>
+    <p class="kind">${p.kind === "Creator" ? (p.candidates.length ? `Job opened by ${esc(label(p.creator))}, who hired ${esc(label(p.candidates[0]))} (paid on success)` : `Job by ${esc(label(p.creator))}, who is paid on success`) : `Community project by ${esc(label(p.creator))}: backers elect one of ${p.candidates.length} contractors`}</p>
     <div class="clock">${clock}</div>
     <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"><div style="width:${pct}%"></div></div>
     <div class="progress-label"><span>${usdc(p.status === "Succeeded" ? p.target : p.totalPledged)} of ${usdc(p.target)} USDC pledged</span><span>${p.backerCount} backer${p.backerCount === 1 ? "" : "s"}</span></div>

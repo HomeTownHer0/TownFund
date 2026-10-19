@@ -172,11 +172,13 @@ export async function fetchState(cfg = CONFIG) {
     else if (sameBytes(data, DISC_BYTES.badge)) badges.push(decodeBadge(a.pubkey, data));
   }
   // Newest job (Creator-only project) and newest Community project on TownFund.
-  // Their creators are discovered from the projects themselves.
+  // Who gets paid is discovered from the projects themselves: on a job, the
+  // contractor the Client hired (or the creator, on a job that names none).
   const mine = projects.sort((a, b) => b.createdAt - a.createdAt || b.projectId - a.projectId);
   const success = mine.find((p) => p.kind === "Creator") || null;
   const community = mine.find((p) => p.kind === "Community") || null;
-  const creators = { creator: success?.creator || w.creator, creator2: community?.creator || null };
+  const jobPayee = success ? (success.candidates[0] || success.creator) : w.creator;
+  const creators = { creator: jobPayee, creator2: community?.creator || null };
   await resolveTokenAccounts(cfg, [creators.creator, creators.creator2, w.backer1, w.backer2]);
   const shown = [success, community].filter(Boolean);
   for (const p of shown) {

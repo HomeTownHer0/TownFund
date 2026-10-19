@@ -435,11 +435,11 @@ fn demo_wallet(name: &str) -> Result<Keypair> {
 }
 
 struct Wallets {
-    /// "Contractor 1099": opens the "Landscaping project" job.
+    /// "Contractor 1099": hired for the "Landscaping project" job and paid.
     creator: Keypair,
     /// "Creator 2": opens "Trash clean up Buffalo Bayou Park" (Community).
     creator2: Keypair,
-    /// "Client": pays for the job.
+    /// "Client": opens the job, hires Contractor 1099, and pays for it.
     backer1: Keypair,
     /// "Backer": chips in to the park cleanup crowdfund.
     backer2: Keypair,
@@ -601,24 +601,25 @@ fn wait_for_deadline(app: &App, deadline: i64) -> Result<()> {
 
 fn demo_success(app: &App, w: &Wallets, seconds: i64) -> Result<()> {
     println!("\n━━ Story 1: Job gets paid ━━");
+    // The Client opens the job and hires Contractor 1099, who is paid.
     let creator = w.creator.pubkey();
     let backer = w.backer1.pubkey();
     let id = new_project_id();
-    let project = project_address(&creator, id);
+    let project = project_address(&backer, id);
     let title = "Landscaping project";
 
     app.send(
-        &format!("Contractor 1099 opens \"{title}\": target 10 USDC, {seconds}s"),
+        &format!("Client opens \"{title}\" and hires Contractor 1099: target 10 USDC, {seconds}s"),
         &[create_project_ix(
-            &creator,
+            &backer,
             id,
             ProjectKind::Creator,
             10 * USDC,
             seconds,
             title,
-            vec![],
+            vec![creator],
         )],
-        &[&w.creator],
+        &[&w.backer1],
     )?;
     println!(
         "     project: {}",

@@ -34,6 +34,8 @@ pub struct Pledged {
 pub struct Tipped {
     pub project: Pubkey,
     pub tipper: Pubkey,
+    /// Who received the tip: the contractor on a job, the creator on a
+    /// Community project.
     pub creator: Pubkey,
     pub amount: u64,
 }

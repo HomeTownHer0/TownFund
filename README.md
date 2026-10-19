@@ -15,7 +15,7 @@ treasury. If it doesn't, every backer gets 100% back. Nobody holds a key to
 the vaults; only the program's rules can release the money.
 
 Built by Christian Arceo ([@HomeTownHer0](https://github.com/HomeTownHer0))
-for Solana School, Fall 2026. Deployed on Devnet, 62 passing tests.
+for Solana School, Fall 2026. Deployed on Devnet, 65 passing tests.
 
 **Watch it live:** [hometownher0.github.io/TownFund](https://hometownher0.github.io/TownFund/)
 
@@ -23,8 +23,8 @@ for Solana School, Fall 2026. Deployed on Devnet, 62 passing tests.
 
 There are two kinds of projects:
 
-- **Job (Creator-only):** the contractor posts the job, the client pays
-  into escrow, and the contractor is paid.
+- **Job (Creator-only):** the client opens the job and names the one
+  contractor they're hiring, pays into escrow, and the contractor is paid.
 - **Community:** neighbors chip in, and each backer votes with their first
   pledge on which listed contractor does the work. The contractor with the
   most votes is paid.
@@ -41,8 +41,9 @@ The rules:
 - After a cancel or a missed target, each backer claims a **refund** of 100%
   of their pledge, no fee. Refunds open at the deadline even if nobody has
   run settle.
-- **Tips** go straight to whoever opened the project. No fee, no refunds,
-  and they don't count toward the target.
+- **Tips** go straight to the contractor on a job, or to whoever opened a
+  community project. No fee, no refunds, and they don't count toward the
+  target.
 - The **treasury** belongs to the program, and V1 has no way to withdraw
   from it.
 - After a success, each backer can get a **soulbound badge**: a Metaplex
@@ -55,13 +56,75 @@ wallet, both project vaults and the town treasury. When the demo runs,
 coins travel along the money map, and the program log underneath prints
 each transaction as it lands. Looking at the page can't move any money.
 
-On the map, **TIP** isn't a real account: a tip goes straight to whoever
-opened the project, but the coin passes through TIP so you can see who
-tipped whom. The ★ next to the Client counts their badges.
+On the map, **TIP** isn't a real account: a tip goes straight to the
+contractor (or the community project's creator), but the coin passes
+through TIP so you can see who tipped whom. The ★ next to the Client counts their badges.
 
-Under the map, a labeled simulation previews the next version: the
-Landscaping job paid in three phases, released by photo proof and the boss's
-signature. It doesn't touch Devnet or move any money.
+Under the map, a labeled simulation previews the next version, described
+below.
+
+## Next version: the digital work ticket
+
+The live page includes a simulation of the next version, built around the
+Landscaping job. It plays on its own and is labeled as a simulation: it
+doesn't touch Devnet or move any money, and none of it is in the V1 program
+yet.
+
+Day labor still runs on paper tickets. A boss on site signs off on the hours
+and the work, and the worker's pay waits on that ticket getting back to an
+office. The digital work ticket puts the ticket on-chain and pays the job in
+phases:
+
+1. **The Client funds the job** from a pay link on their phone. The full
+   amount locks in escrow.
+2. **Phase 1 (33.33%)** releases right away, so the contractor can buy
+   supplies and start.
+3. **The contractor checks in** on site, and the arrival time is recorded
+   on-chain.
+4. **Photos are the proof.** Before, progress and after photos go to
+   permanent storage, and each photo's fingerprint is saved on-chain in the
+   job's gallery.
+5. **Phase 2 (33.33%)** releases when the boss on site approves the progress
+   photos from their phone.
+6. **Phase 3 (33.34%)** releases when the boss signs the work ticket: hours,
+   work done, and whether to bring the contractor back.
+7. **The signed ticket** joins the contractor's on-chain work history.
+
+Each release pays 95% to the contractor and 5% to the treasury, and the
+vault ends at exactly 0.
+
+### The rules it adds
+
+- **The Client sets the milestones when funding.** What proof each phase
+  needs and how long the Client has to review it are saved on-chain, so
+  neither side can change the rules later.
+- **The boss's signature is the approval.** Signing from a phone releases
+  the phase immediately, at any hour, with no trip back to an office.
+- **Silence counts as approval.** If the Client doesn't respond before the
+  review window ends, anyone can send settle and the program releases the
+  phase on its own. The money can only go to the contractor and the
+  treasury, so whoever sends it gains nothing.
+- **A dispute freezes a phase.** If the Client disputes in time, that
+  phase's money stays in escrow instead of releasing.
+- **Check-in and check-out are timestamped** by the chain's own clock, so
+  they can't be backdated.
+- **Work history belongs to the worker.** Each signed ticket, with its hours
+  and the "bring them back" answer, builds a record the contractor carries
+  from job to job.
+
+### How it would be built
+
+| Step | Tool |
+|---|---|
+| Client pays from a text or a link | Solana Actions (blinks), with a QR code as an option in person |
+| Boss signs without a seed phrase | An embedded wallet that signs in with Google or Face ID |
+| Photos stored for good | Arweave permanent storage, with each photo's fingerprint saved on-chain |
+| The job gallery | A Metaplex Core collection per job, one NFT per proof photo, held in the contractor's wallet |
+| Phases, approvals and timeouts | New TownFund instructions on the same escrow vault |
+
+Photos on permanent storage are public and can't be deleted, so faces,
+addresses and card numbers on receipts have to be cropped or blurred before
+upload.
 
 ## Check it on Devnet
 
@@ -72,11 +135,13 @@ and the "Trash clean up Buffalo Bayou Park" crowdfund.
 
 | Step | Link | What you'll see |
 |---|---|---|
-| Client pays 10 USDC into escrow | [tx](https://explorer.solana.com/tx/32HNvS53kWUvC3Nu4SoX68T8DYAPYp6w2W4QDZM13ahxA9bRb42dQdVAaSZ971Ce7LwaM2B23yK37EZdK2bokGyk?cluster=devnet) | USDC moves from the client to the vault |
-| Settle (success) | [tx](https://explorer.solana.com/tx/56NFhbPQy2xe8P2Towp8U69yBkV6gzEsNrgHT2qbctxNyvEDtQvGV8ndgvGLZ7xKPvADgACtw2XQQhoVtA2Tgcuw?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
-| Soulbound badge | [NFT](https://explorer.solana.com/address/GNSBB7BL5YwcVyaCL2Qj3bceSMzLuHsQsYWJ57rBDQCv?cluster=devnet) | Owned by the client and frozen for good |
-| Settle (failure) | [tx](https://explorer.solana.com/tx/2fiBdK97WakDnwxSz85znY6PJ1PNk9iLzZXtDuuxVjMX35eC8nkiipEDp9ZN76c8E829AEY8c8PrfSEKotgBsFLs?cluster=devnet) | 5 of 20 USDC raised, so it's marked Failed and no money moves |
-| Refund | [tx](https://explorer.solana.com/tx/16o4akLKcSVqigRin6M8aBiWMaMH6dc8bjp45rpiWYG5ALge8KptGaWrkU3J9VNcvPaKdCe7r1of2C1cUJStbXE?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
+| Client opens the job and hires Contractor 1099 | [tx](https://explorer.solana.com/tx/3iXxfcGzaguowQmwDQW416XT7GRWs7qtyHK4zKeGNJG7Ld7pzUu5AKK4uM72f5oYj9MLfjS4XWMFRujFq7QzwqVQ?cluster=devnet) | The client signs; the project and its empty vault are created |
+| Client pays 10 USDC into escrow | [tx](https://explorer.solana.com/tx/3YW3HvK8GGwkMTxU3xQvw2xBBajUZLVGKEPZ5iVKhbQi3vmJhceKSoMaCVKarDnH4KKiRmpw4xh8tcaAR21EBVBv?cluster=devnet) | USDC moves from the client to the vault |
+| Client tips the contractor | [tx](https://explorer.solana.com/tx/Vch3jzDcS98fx6ebvcBkYcQnR7xWr55fx9r5rZ4qucaP6zrAJ59MALz3iNfTgQhUfhUoETaqAPmYsgPhuyvs6Yo?cluster=devnet) | 1 USDC straight to the contractor, no fee |
+| Settle (success) | [tx](https://explorer.solana.com/tx/NMBPgUpwoCBaAyNzde2mPVybnBw3z9oTMPLggqiyjntuiSSFkVtr1ZVK2kdqQMNXDcZQyqjvkRRfiGEvfJJJ5zt?cluster=devnet) | 9.5 USDC to the contractor, 0.5 to the treasury, vault empty |
+| Soulbound badge | [NFT](https://explorer.solana.com/address/CmTduKhrR4hUo7x6j4Xii8YK38XpPfNZbjPiHCQLrkyj?cluster=devnet) | Owned by the client and frozen for good |
+| Settle (failure) | [tx](https://explorer.solana.com/tx/5t55B47c75EWyBB2LwEsL12888wh7X88ytzndm2VXqE2JP8QeuQhP5oXYzu8rvuP31Qzn5NHgfgbruVX4mFmGfV2?cluster=devnet) | 5 of 20 USDC raised, so it's marked Failed and no money moves |
+| Refund | [tx](https://explorer.solana.com/tx/3KpuoSkG4n32kfHwu2acsZFB2xQuVWDCDmyffyPoEiDcNLpKVSzsCvmPuMkgdAxjcKSD3NuihY92oMzXQGn3EsVd?cluster=devnet) | 5 USDC back to the backer, and the pledge receipt is closed |
 
 Other addresses: Circle Devnet USDC `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`
 ([faucet](https://faucet.circle.com)), Metaplex Core
@@ -88,12 +153,14 @@ wallet) `7cpjF6175EPGZ3gopVLn94h5iuUFvd2VZ9Xq9QKzxU21`.
 Eight instructions:
 
 - `initialize_project`: opens a project and its empty vault. Checks the
-  target, duration, title (64 bytes max) and contractor list.
+  target, duration, title (64 bytes max) and contractor list: one hired
+  contractor (or none) on a job, 2 to 5 candidates on a community project.
 - `initialize_treasury`: creates the treasury and its fee vault, once.
   There's nothing to configure, so whoever calls it gets no control.
 - `pledge`: moves USDC from the backer's own account into this project's
   vault, before the deadline.
-- `tip`: sends USDC straight to whoever opened the project.
+- `tip`: sends USDC straight to the job's contractor, or to whoever opened
+  a community project.
 - `settle`: pays out 95/5 to the real payee, or marks the project Failed.
 - `cancel_project`: only the creator, only before the deadline.
 - `refund`: 100% back to the backer, and the receipt is closed so it can't
@@ -129,7 +196,8 @@ Each rule has a test that tries to break it:
 - Only Devnet USDC: `rejects_any_mint_except_townfund_usdc`, `rejects_fake_usdc`
 - A pledge only goes into its own project's vault: `rejects_sending_pledge_to_a_different_vault`
 - You can't spend someone else's USDC: `rejects_spending_someone_elses_usdc_account`
-- Only the real payee gets paid: `success_requires_the_payees_own_usdc_account`, `community_success_pays_elected_contractor_not_creator`
+- Only the real payee gets paid: `success_requires_the_payees_own_usdc_account`, `client_opened_job_pays_the_hired_contractor_not_the_client`, `community_success_pays_elected_contractor_not_creator`
+- Tips reach the contractor, not the client: `tip_on_client_opened_job_goes_to_the_hired_contractor`
 - The 95/5 split leaves nothing behind: `fee_is_rounded_down_and_nothing_is_left_behind`
 - Nothing happens twice: `cannot_settle_twice`, `cannot_refund_twice`, `no_second_badge_for_the_same_backer`
 - Refunds only go to the backer who pledged: `cannot_claim_someone_elses_refund`
@@ -147,8 +215,8 @@ the rule on purpose in the code to make sure its test caught it.
 You'll need Solana CLI 4.1.2, Anchor 1.2.0 and Rust 1.89 or newer.
 
 ```bash
-./scripts/build.sh                  # normal build + 62 tests
-./scripts/build-devnet.sh           # demo build (10 s to 10 min projects) + 63 tests
+./scripts/build.sh                  # normal build + 65 tests
+./scripts/build-devnet.sh           # demo build (10 s to 10 min projects) + 66 tests
 cargo run -p townfund-cli -- demo   # full demo on Devnet, with an Explorer link per step
 cargo run -p townfund-cli -- serve  # local runner behind the live page's Run demo button
 ```
@@ -156,8 +224,8 @@ cargo run -p townfund-cli -- serve  # local runner behind the live page's Run de
 GitHub runs both builds on every push. The demo funds four wallets
 (Contractor 1099, Creator 2, Client, Backer) and runs two stories:
 
-1. **"Landscaping project"**, a job: the Client pays 10 USDC and tips
-   Contractor 1099 1 USDC. At the deadline, settle pays out 95/5 and the
+1. **"Landscaping project"**, a job: the Client opens it and hires
+   Contractor 1099, pays 10 USDC and tips Contractor 1099 1 USDC. At the deadline, settle pays out 95/5 and the
    Client gets a badge.
 2. **"Trash clean up Buffalo Bayou Park"**, a community crowdfund: the
    Backer pledges 5 of the 20 USDC target and tips Creator 2 1 USDC. Settle

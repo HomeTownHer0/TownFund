@@ -11,7 +11,7 @@ pub enum TownFundError {
     InvalidDuration,
     #[msg("Title is longer than 64 bytes")]
     TitleTooLong,
-    #[msg("A Creator-only project cannot have contractor candidates")]
+    #[msg("A job can name at most one contractor")]
     CreatorProjectHasCandidates,
     #[msg("A Community project needs 2 to 5 contractor candidates")]
     WrongCandidateCount,

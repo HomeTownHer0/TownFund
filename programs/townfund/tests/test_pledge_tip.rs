@@ -276,6 +276,25 @@ fn rejects_tip_to_an_account_the_creator_does_not_own() {
 }
 
 #[test]
+fn tip_on_client_opened_job_goes_to_the_hired_contractor() {
+    let contractor = Pubkey::new_unique();
+    let (mut bench, client, project) =
+        with_project(NewProject { candidates: vec![contractor], ..Default::default() });
+    let client_owner = client.pubkey();
+    let client_token = bench.usdc_account(&client_owner, 0);
+    let contractor_token = bench.usdc_account(&contractor, 0);
+    let t = backer(&mut bench, 10);
+
+    let to_client = tip_ix(&t.0.pubkey(), &project, &t.1, &client_token, 3 * USDC);
+    assert_fault(bench.send(to_client, &[&t.0]), E::WrongPayeeAccount);
+
+    let to_contractor = tip_ix(&t.0.pubkey(), &project, &t.1, &contractor_token, 3 * USDC);
+    bench.send(to_contractor, &[&t.0]).unwrap();
+    assert_eq!(bench.balance(contractor_token), 3 * USDC);
+    assert_eq!(bench.balance(client_token), 0);
+}
+
+#[test]
 fn rejects_zero_tip() {
     let (mut bench, creator, project) = with_project(NewProject::default());
     let creator_owner = creator.pubkey();

@@ -1,7 +1,8 @@
 //! settle: anyone can run it once the deadline has passed.
 //!  - Target hit: the whole vault pays out once. 5% (rounded down) to the
 //!    treasury, the rest to the payee, so no dust is left behind.
-//!    Payee = creator (Creator-only) or the elected contractor (Community).
+//!    Payee = the hired contractor (job), the elected contractor
+//!    (Community), or the creator (a job that names no contractor).
 //!  - Target missed: marked Failed. Backers then claim refunds.
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
@@ -64,10 +65,10 @@ pub fn handle_settle(ctx: Context<Settle>) -> Result<()> {
     }
 
     // ---- Target hit: who gets paid?
-    let winner = project.winning_candidate();
-    let payee = match (project.kind, winner) {
-        (ProjectKind::Community, Some(i)) => project.candidates[i as usize],
-        _ => project.creator,
+    let payee = project.payee();
+    let winner = match project.kind {
+        ProjectKind::Community => project.winning_candidate(),
+        ProjectKind::Creator => None,
     };
     let payee_token = ctx
         .accounts

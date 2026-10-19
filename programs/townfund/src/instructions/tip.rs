@@ -1,5 +1,6 @@
-//! tip: send USDC straight to a project's creator. No fee, not refundable,
-//! never enters the vault.
+//! tip: send USDC straight to the person a project names for tips: on a job,
+//! the contractor doing the work; on a Community project, the creator.
+//! No fee, not refundable, never enters the vault.
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
@@ -21,8 +22,13 @@ pub struct Tip<'info> {
     #[account(mut, token::mint = mint, token::authority = tipper)]
     pub tipper_token: Account<'info, TokenAccount>,
 
-    /// Interlock: must be a USDC account owned by this project's creator.
-    #[account(mut, token::mint = mint, token::authority = project.creator)]
+    /// Interlock: must be a USDC account owned by the project's tip
+    /// recipient (see Project::tip_recipient).
+    #[account(
+        mut,
+        token::mint = mint,
+        constraint = creator_token.owner == project.tip_recipient() @ TownFundError::WrongPayeeAccount,
+    )]
     pub creator_token: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
@@ -48,7 +54,7 @@ pub fn handle_tip(ctx: Context<Tip>, amount: u64) -> Result<()> {
     emit!(Tipped {
         project: ctx.accounts.project.key(),
         tipper: ctx.accounts.tipper.key(),
-        creator: ctx.accounts.project.creator,
+        creator: ctx.accounts.project.tip_recipient(),
         amount,
     });
     Ok(())

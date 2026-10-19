@@ -156,10 +156,27 @@ fn rejects_title_over_64_bytes() {
 }
 
 #[test]
-fn rejects_candidates_on_creator_project() {
+fn job_can_name_one_contractor_to_hire() {
+    let mut bench = Bench::new();
+    let client = bench.wallet();
+    let contractor = Pubkey::new_unique();
+    let p = NewProject { candidates: vec![contractor], ..Default::default() };
+    create(&mut bench, &client, &p).unwrap();
+    let project = bench.project(project_address(&client.pubkey(), p.project_id));
+    assert_eq!(project.creator, client.pubkey());
+    assert_eq!(project.candidates, vec![contractor]);
+    assert_eq!(project.payee(), contractor);
+}
+
+#[test]
+fn rejects_job_with_two_contractors_or_an_empty_address() {
     expect_fault(
         NewProject { candidates: candidates(2), ..Default::default() },
         E::CreatorProjectHasCandidates,
+    );
+    expect_fault(
+        NewProject { candidates: vec![Pubkey::default()], ..Default::default() },
+        E::InvalidCandidate,
     );
 }
 

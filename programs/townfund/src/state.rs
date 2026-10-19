@@ -4,7 +4,8 @@ use anchor_lang::prelude::*;
 /// Who gets paid when a project succeeds.
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug, InitSpace)]
 pub enum ProjectKind {
-    /// No vote. The creator is paid.
+    /// A job. No vote. The creator can name one contractor to hire, who is
+    /// paid; if none is named, the creator is paid.
     Creator,
     /// Backers elect one of 2-5 contractor candidates, who is paid.
     Community,
@@ -35,7 +36,7 @@ pub struct Project {
     pub vault_bump: u8,
     pub kind: ProjectKind,
     pub status: ProjectStatus,
-    /// Wallet that created the project (paid if Creator-only).
+    /// Wallet that created the project (paid on a job that names no contractor).
     pub creator: Pubkey,
     /// Creator's own number for this project, so one creator can run many.
     pub project_id: u64,
@@ -55,7 +56,7 @@ pub struct Project {
     pub deadline: i64,
     #[max_len(64)]
     pub title: String,
-    /// Contractor candidates (Community only; empty for Creator-only).
+    /// Job: empty, or the one contractor hired. Community: 2-5 candidates.
     #[max_len(5)]
     pub candidates: Vec<Pubkey>,
     /// Vote count per candidate index.
@@ -116,6 +117,24 @@ impl Project {
             }
         }
         Some(best as u8)
+    }
+
+    /// Who is paid on success: the hired contractor on a job (if named), the
+    /// elected contractor on a Community project, otherwise the creator.
+    pub fn payee(&self) -> Pubkey {
+        match self.winning_candidate() {
+            Some(i) => self.candidates[i as usize],
+            None => self.creator,
+        }
+    }
+
+    /// Who receives tips: on a job, the person doing the work (the payee);
+    /// on a Community project, the creator.
+    pub fn tip_recipient(&self) -> Pubkey {
+        match self.kind {
+            ProjectKind::Creator => self.payee(),
+            ProjectKind::Community => self.creator,
+        }
     }
 
     /// Refunds are open when the project was cancelled, failed at settle,

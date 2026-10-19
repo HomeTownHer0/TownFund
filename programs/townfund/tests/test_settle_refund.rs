@@ -183,6 +183,28 @@ fn success_requires_the_payees_own_usdc_account() {
 }
 
 #[test]
+fn client_opened_job_pays_the_hired_contractor_not_the_client() {
+    let contractor = Pubkey::new_unique();
+    let mut w = world(NewProject { candidates: vec![contractor], ..Default::default() });
+
+    // The Client opened the job and pays into it too.
+    let client = w.creator.pubkey();
+    let client_token = w.bench.usdc_account(&client, 100 * USDC);
+    let ix = pledge_ix(&client, &w.project, &client_token, 100 * USDC, None);
+    w.bench.send(ix, &[&w.creator]).unwrap();
+    w.past_deadline();
+
+    // Paying the Client back is refused; only the hired contractor can be paid.
+    assert_fault(w.settle(Some(client_token)), E::WrongPayeeAccount);
+    let contractor_token = w.bench.usdc_account(&contractor, 0);
+    w.settle(Some(contractor_token)).unwrap();
+    assert_eq!(w.bench.balance(contractor_token), 95 * USDC);
+    assert_eq!(w.treasury_balance(), 5 * USDC);
+    assert_eq!(w.bench.balance(client_token), 0, "client gets nothing back");
+    assert_eq!(w.vault(), 0);
+}
+
+#[test]
 fn community_success_pays_elected_contractor_not_creator() {
     let candidates = vec![Pubkey::new_unique(), Pubkey::new_unique(), Pubkey::new_unique()];
     let mut w = world(NewProject {

@@ -104,11 +104,15 @@ fn is_valid_duration(duration_secs: i64) -> bool {
             && (DEMO_MIN_DURATION..=DEMO_MAX_DURATION).contains(&duration_secs))
 }
 
-/// Creator-only: no candidates. Community: 2-5 distinct, real addresses.
+/// Job: no contractor, or exactly one real address (the contractor hired).
+/// Community: 2-5 distinct, real addresses.
 fn check_candidates(kind: ProjectKind, candidates: &[Pubkey]) -> Result<()> {
     match kind {
         ProjectKind::Creator => {
-            require!(candidates.is_empty(), TownFundError::CreatorProjectHasCandidates);
+            require!(candidates.len() <= 1, TownFundError::CreatorProjectHasCandidates);
+            if let Some(contractor) = candidates.first() {
+                require!(*contractor != Pubkey::default(), TownFundError::InvalidCandidate);
+            }
         }
         ProjectKind::Community => {
             require!(
