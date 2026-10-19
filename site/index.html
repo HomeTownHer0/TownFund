@@ -195,6 +195,17 @@
   .wt-ctl { display: flex; gap: 8px; }
   .wt-ctl button { font: inherit; font-weight: 800; font-size: 15px; padding: 6px 14px; border-radius: 8px; cursor: pointer; border: 0; background: var(--asphalt-3); color: var(--paint); }
   .wt-ctl button.primary { background: #79c0ff; color: #0b1a2a; }
+  .wt-ctl { align-items: center; }
+  .wt-head > div:first-child { flex: 1 1 420px; min-width: 0; }
+  .wt-ctl button.wt-switch { display: inline-flex; align-items: center; gap: 8px; background: none; padding: 6px 4px; margin-right: 6px; }
+  .wt-switch .track { width: 42px; height: 24px; border-radius: 12px; background: var(--asphalt-3); border: 2px solid #4a5054; position: relative; transition: background .25s, border-color .25s; flex: none; }
+  .wt-switch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--paint); transition: left .25s, background .25s; }
+  .wt-switch[aria-checked="true"] .track { background: #79c0ff; border-color: #79c0ff; }
+  .wt-switch[aria-checked="true"] .knob { left: 20px; background: #0b1a2a; }
+  .wt-phases.one { grid-template-columns: 1fr; }
+  .wt.simple #wt-ph3, .wt:not(.simple) #wt-ph1 { display: none; }
+  .wt.simple #wt-g2 { display: none; }
+  .wt.simple .wt-gallery { grid-template-columns: repeat(2, 1fr); }
   .wt-cap { margin: 14px 0 12px; padding: 10px 14px; border-radius: 10px; background: #0c0f12; border: 1px solid #262c31; font-size: 17px; min-height: 52px; display: flex; gap: 12px; align-items: center; }
   .wt-cap .n { flex: none; font-weight: 800; color: #79c0ff; font-variant-numeric: tabular-nums; }
   .wt-grid { display: grid; grid-template-columns: 250px 1fr; gap: 20px; align-items: start; }
@@ -368,18 +379,19 @@
     </div>
   </section>
 
-  <section class="wt" id="wt" aria-label="Next version preview: digital work ticket">
+  <section class="wt simple" id="wt" aria-label="Next version preview: digital work ticket">
     <div class="wt-head">
       <div>
         <h2>Next version: the digital work ticket <span class="wt-tag">Simulation</span></h2>
-        <p class="wt-note">A preview of the Landscaping job with phased pay. Not on-chain yet: nothing here touches Devnet or moves money.</p>
+        <p class="wt-note" id="wt-note">A preview of the Landscaping job, paid in full when the boss signs the e-ticket. Not on-chain yet: nothing here touches Devnet or moves money.</p>
       </div>
       <div class="wt-ctl">
+        <button type="button" class="wt-switch" id="wt-mode" role="switch" aria-checked="false"><span class="track"><span class="knob"></span></span>Phased pay</button>
         <button type="button" class="primary" id="wt-play">Play</button>
         <button type="button" id="wt-replay">Replay</button>
       </div>
     </div>
-    <div class="wt-cap" aria-live="polite"><span class="n" id="wt-n">0/9</span><span id="wt-cap">Press Play to walk through the Landscaping job, one phase at a time.</span></div>
+    <div class="wt-cap" aria-live="polite"><span class="n" id="wt-n">0/6</span><span id="wt-cap">Press Play to walk through the Landscaping job.</span></div>
     <div class="wt-grid">
       <div class="wt-phone" aria-hidden="true"><div class="wt-screen" id="wt-screen"></div></div>
       <div class="wt-side">
@@ -388,7 +400,10 @@
           <div class="wt-card"><div class="k">Contractor 1099 received</div><div class="v" id="wt-paid">0.00</div></div>
           <div class="wt-card"><div class="k">Town treasury (5%)</div><div class="v" id="wt-fee">0.00</div></div>
         </div>
-        <div class="wt-phases">
+        <div class="wt-phases one" id="wt-ph1">
+          <div class="wt-phase" id="wt-p0"><div class="k">Full pay · 100%</div><div class="s">Released when the boss signs the e-ticket</div></div>
+        </div>
+        <div class="wt-phases" id="wt-ph3">
           <div class="wt-phase" id="wt-p1"><div class="k">Phase 1 · 33.33%</div><div class="s">Released when funded</div></div>
           <div class="wt-phase" id="wt-p2"><div class="k">Phase 2 · 33.33%</div><div class="s">Progress photos + approval</div></div>
           <div class="wt-phase" id="wt-p3"><div class="k">Phase 3 · 33.34%</div><div class="s">Boss signs the ticket</div></div>
@@ -951,7 +966,28 @@ const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : loca
   // 10 USDC job, three phases. Each phase: 5% fee rounded down, the rest to the contractor.
   const P1 = { pay: 3.166667, fee: 0.166666 }, P2 = { pay: 3.166667, fee: 0.166666 }, P3 = { pay: 3.166668, fee: 0.166666 };
   const screen = (app, body) => `<div class="app">${app}</div>${body}`;
-  const STEPS = [
+  // Same 10 USDC job, paid all at once when the boss signs: 9.50 to the contractor, 0.50 fee.
+  const SIMPLE = [
+    { cap: "The Client gets a text with the job's pay link and taps Pay. 10 USDC locks in escrow.",
+      ui: screen("Messages", `<div class="msg">Landscaping project: fund 10 USDC into TownFund escrow.</div><div class="row"><span>Job</span><b>Landscaping project</b></div><div class="row"><span>Released</span><b>When the boss signs</b></div><div class="btn">Pay 10 USDC</div>`),
+      s: { vault: 10, paid: 0, fee: 0, p0: "wait" } },
+    { cap: "Contractor 1099 arrives and checks in from their phone. The time is stamped on-chain.",
+      ui: screen("TownFund", `<div class="ttl">Check in</div><div class="row"><span>Site</span><b>Landscaping project</b></div><div class="big">8:02 AM</div><div class="btn green">Check in</div>`),
+      s: { in: "8:02 AM" } },
+    { cap: "Before photos go up. Each photo's fingerprint is saved on-chain and added to the job gallery.",
+      ui: screen("Camera", `<svg viewBox="0 0 120 90"><use href="#wt-g1-art"/></svg><div class="row"><span>Photo</span><b>Before</b></div><div class="btn blue">Upload to gallery</div>`),
+      s: { g: [1] } },
+    { cap: "Job done: after photos go up and Contractor 1099 checks out. The boss gets a link to the e-ticket.",
+      ui: screen("Camera", `<svg viewBox="0 0 120 90"><use href="#wt-g3-art"/></svg><div class="row"><span>Checked out</span><b>3:41 PM</b></div><div class="btn blue">Send e-ticket to boss</div>`),
+      s: { g: [3], out: "3:41 PM" } },
+    { cap: "The boss opens the link and signs the e-ticket online with Face ID. The full pay releases: 9.50 to Contractor 1099, 0.50 to the town treasury.",
+      ui: screen("Boss's phone", `<div class="ttl">Sign work ticket</div><div class="row"><span>Hours</span><b>8:02 AM – 3:41 PM</b></div><div class="row"><span>Photos</span><b>Before + after</b></div><div class="row"><span>Rehire</span><b>Yes</b></div><div class="btn green">Sign (Face ID)</div>`),
+      s: { vault: 0, paid: 9.5, fee: 0.5, p0: "on", sig: "Signed", rehire: "Yes" } },
+    { cap: "The signed ticket joins Contractor 1099's on-chain work history. Paid in full, no trip back to an office.",
+      ui: screen("TownFund", `<div class="ttl">Work history</div><div class="row"><span>Jobs completed</span><b>1</b></div><div class="row"><span>Rehire requests</span><b>1</b></div><div class="row"><span>Total paid</span><b>9.50 USDC</b></div><div class="ok">✓ Ticket signed</div>`),
+      s: { hist: "1 signed ticket" } },
+  ];
+  const PHASED = [
     { cap: "The Client gets a text with the job's pay link and taps Pay. 10 USDC locks in escrow.",
       ui: screen("Messages", `<div class="msg">Landscaping project: fund 10 USDC into TownFund escrow.</div><div class="row"><span>Job</span><b>Landscaping project</b></div><div class="row"><span>Phases</span><b>3 × 33.33%</b></div><div class="btn">Pay 10 USDC</div>`),
       s: { vault: 10, paid: 0, fee: 0, p: ["wait", "", ""] } },
@@ -963,16 +999,16 @@ const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : loca
       s: { in: "8:02 AM" } },
     { cap: "Before photos go up. Each photo's fingerprint is saved on-chain and added to the job gallery.",
       ui: screen("Camera", `<svg viewBox="0 0 120 90"><use href="#wt-g1-art"/></svg><div class="row"><span>Photo</span><b>Before</b></div><div class="btn blue">Upload to gallery</div>`),
-      s: { g: 1 } },
+      s: { g: [1] } },
     { cap: "Halfway through, progress photos go up as the proof for phase 2.",
       ui: screen("Camera", `<svg viewBox="0 0 120 90"><use href="#wt-g2-art"/></svg><div class="row"><span>Photo</span><b>Progress</b></div><div class="btn blue">Submit phase 2 proof</div>`),
-      s: { g: 2, p: ["on", "wait", ""] } },
+      s: { g: [2], p: ["on", "wait", ""] } },
     { cap: "The boss on site checks the photos and approves with Face ID. Phase 2 releases.",
       ui: screen("Boss's phone", `<div class="ttl">Approve phase 2?</div><div class="row"><span>Proof</span><b>2 photos</b></div><div class="row"><span>Releases</span><b>3.17 USDC</b></div><div class="btn green">Approve (Face ID)</div>`),
       s: { vault: 3.33, paid: P1.pay + P2.pay, fee: P1.fee + P2.fee, p: ["on", "on", ""] } },
     { cap: "Job done: after photos go up and Contractor 1099 checks out.",
       ui: screen("Camera", `<svg viewBox="0 0 120 90"><use href="#wt-g3-art"/></svg><div class="row"><span>Checked out</span><b>3:41 PM</b></div><div class="btn blue">Submit final proof</div>`),
-      s: { g: 3, out: "3:41 PM", p: ["on", "on", "wait"] } },
+      s: { g: [3], out: "3:41 PM", p: ["on", "on", "wait"] } },
     { cap: "The boss signs the work ticket: work done, rehire yes. Phase 3 releases and the vault ends at 0.",
       ui: screen("Boss's phone", `<div class="ttl">Sign work ticket</div><div class="row"><span>Hours</span><b>8:02 AM – 3:41 PM</b></div><div class="row"><span>Rehire</span><b>Yes</b></div><div class="btn green">Sign (Face ID)</div>`),
       s: { vault: 0, paid: P1.pay + P2.pay + P3.pay, fee: P1.fee + P2.fee + P3.fee, p: ["on", "on", "on"], sig: "Signed", rehire: "Yes" } },
@@ -992,17 +1028,23 @@ const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : loca
     holder.appendChild(sym); root.appendChild(holder);
   });
 
+  const NOTE = {
+    simple: "A preview of the Landscaping job, paid in full when the boss signs the e-ticket. Not on-chain yet: nothing here touches Devnet or moves money.",
+    phased: "A preview of the Landscaping job with phased pay. Not on-chain yet: nothing here touches Devnet or moves money.",
+  };
+  let mode = "simple", STEPS = SIMPLE;
   let i = -1, timer = null, playing = false;
   const fmt = (n) => n.toFixed(2);
   const set = (id, text) => { const el = $(id); el.textContent = text; el.classList.toggle("dim", text === "–"); };
   function reset() {
     $("wt-vault").textContent = fmt(0); $("wt-paid").textContent = fmt(0); $("wt-fee").textContent = fmt(0);
-    ["wt-p1", "wt-p2", "wt-p3"].forEach((id) => $(id).className = "wt-phase");
+    ["wt-p0", "wt-p1", "wt-p2", "wt-p3"].forEach((id) => $(id).className = "wt-phase");
     ["wt-g1", "wt-g2", "wt-g3"].forEach((id) => $(id).classList.remove("on"));
     ["wt-in", "wt-out", "wt-sig", "wt-rehire", "wt-hist"].forEach((id) => set(id, "–"));
-    $("wt-screen").innerHTML = screen("TownFund", `<div class="ttl">Landscaping project</div><div class="row"><span>Pay</span><b>10 USDC</b></div><div class="row"><span>Phases</span><b>3 × 33.33%</b></div>`);
+    const terms = mode === "phased" ? `<div class="row"><span>Phases</span><b>3 × 33.33%</b></div>` : `<div class="row"><span>Released</span><b>When the boss signs</b></div>`;
+    $("wt-screen").innerHTML = screen("TownFund", `<div class="ttl">Landscaping project</div><div class="row"><span>Pay</span><b>10 USDC</b></div>${terms}`);
     $("wt-n").textContent = `0/${STEPS.length}`;
-    $("wt-cap").textContent = "Press Play to walk through the Landscaping job, one phase at a time.";
+    $("wt-cap").textContent = mode === "phased" ? "Press Play to walk through the Landscaping job, one phase at a time." : "Press Play to walk through the Landscaping job.";
   }
   function show(k) {
     const st = STEPS[k];
@@ -1012,7 +1054,8 @@ const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : loca
     const s = st.s;
     if (s.vault !== undefined) { $("wt-vault").textContent = fmt(s.vault); $("wt-paid").textContent = fmt(s.paid); $("wt-fee").textContent = fmt(s.fee); }
     if (s.p) s.p.forEach((c, j) => $("wt-p" + (j + 1)).className = "wt-phase" + (c ? " " + c : ""));
-    if (s.g) for (let j = 1; j <= s.g; j++) $("wt-g" + j).classList.add("on");
+    if (s.p0) $("wt-p0").className = "wt-phase " + s.p0;
+    if (s.g) s.g.forEach((j) => $("wt-g" + j).classList.add("on"));
     if (s.in) set("wt-in", s.in);
     if (s.out) set("wt-out", s.out);
     if (s.sig) set("wt-sig", s.sig);
@@ -1029,6 +1072,15 @@ const storeSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : loca
   function pause() { playing = false; clearTimeout(timer); $("wt-play").textContent = "Play"; }
   $("wt-play").addEventListener("click", () => (playing ? pause() : play()));
   $("wt-replay").addEventListener("click", () => { pause(); reset(); i = -1; play(); });
+  // The switch flips between the two flows and starts the chosen one from the top.
+  $("wt-mode").addEventListener("click", () => {
+    const phased = mode !== "phased";
+    mode = phased ? "phased" : "simple"; STEPS = phased ? PHASED : SIMPLE;
+    $("wt-mode").setAttribute("aria-checked", String(phased));
+    root.classList.toggle("simple", !phased);
+    $("wt-note").textContent = NOTE[mode];
+    pause(); reset(); i = -1; play();
+  });
   reset();
   // Start by itself the first time the section is on screen.
   if ("IntersectionObserver" in window) {
